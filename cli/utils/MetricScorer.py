@@ -1,60 +1,88 @@
 from typing import Dict, Any
-from cli.utils.metrics.codequality import CodeQuality
-from cli.utils.metrics.datasetquality import DatasetQuality
-from cli.utils.metrics.datasetandcodescore import DatasetAndCode
-from cli.utils.metrics.busfactor import BusFactor
-from cli.utils.metrics.license import License
-from cli.utils.metrics.rampuptime import RampUpTime
-from cli.utils.metrics.sizescore import SizeScore
-from cli.utils.metrics.performanceclaims import PerformanceClaims
+from cli.utils.metrics.codequality import CodeQualityMetric
+from cli.utils.metrics.datasetquality import DatasetQualityMetric
+from cli.utils.metrics.datasetandcodescore import DatasetAndCodeScoreMetric
+from cli.utils.metrics.busfactor import BusFactorMetric
+from cli.utils.metrics.license import LicenseMetric
+from cli.utils.metrics.rampuptime import RampUpTimeMetric
+from cli.utils.metrics.sizescore import SizeScoreMetric
+from cli.utils.metrics.performanceclaims import PerformanceClaimsMetric
+from cli.utils.datafetchers.MetricDataFetcher import MetricDataFetcher  # import your fetcher
 
 
 class MetricScorer:
     """
-    Runs all metric scorers and returns a flat dictionary
+    Runs all metric scorers and returns a dictionary
     of all metric scores and latencies.
-    Example:
-    {
-        "ramp_up_time": 0.9,
-        "ramp_up_time_latency": 45.0,
-        "bus_factor": 0.95,
-        "bus_factor_latency": 25.0,
-        ...
-    }
+    SizeScoreMetric returns multiple device scores, which are included directly.
     """
 
     def __init__(self):
         self.metrics = {
-            "code_quality": CodeQuality(),
-            "dataset_quality": DatasetQuality(),
-            "dataset_and_code": DatasetAndCode(),
-            "bus_factor": BusFactor(),
-            "license": License(),
-            "size_score": SizeScore(),
-            "ramp_up_time": RampUpTime(),
-            "performance_claims": PerformanceClaims(),
+            "code_quality": CodeQualityMetric(),
+            "dataset_quality": DatasetQualityMetric(),
+            "dataset_and_code": DatasetAndCodeScoreMetric(),
+            "bus_factor": BusFactorMetric(),
+            "license": LicenseMetric(),
+            "size_score": SizeScoreMetric(),
+            "ramp_up_time": RampUpTimeMetric(),
+            "performance_claims": PerformanceClaimsMetric(),
         }
+        self.results: Dict[str, Any] = {}
 
     def score_all_metrics(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Calls each metric’s getScores() and
-        flattens the results into a single dictionary.
+        Clears previous results and updates the dictionary directly with scores
+        and latencies from each metric's getScores().
+        SizeScoreMetric returns multiple scores, so we include them directly.
         """
-        results: Dict[str, Any] = {}
+        self.results.clear()
 
         for name, metric in self.metrics.items():
             try:
                 metric_result = metric.getScores(data)
-                score = round(metric_result.get("score", 0.0), 3)
-                latency = round(metric_result.get("latency", 0.0), 3)
 
-                # Add flattened keys
-                results[name] = score
-                results[f"{name}_latency"] = latency
+                # If SizeScoreMetric, include all keys as-is
+                if name == "size_score":
+                    self.results.update(metric_result)
+                else:
+                    self.results[name] = metric_result.get("score", 0.0)
+                    self.results[f"{name}_latency"] = metric_result.get("latency", 0.0)
 
             except Exception as e:
-                print(f"[WARN] Metric '{name}' failed: {e}")
-                results[name] = 0.0
-                results[f"{name}_latency"] = 0.0
+                if name == "size_score":
+                    # populate all device scores as 0 on failure
+                    self.results.update({
+                        "raspberry_pi": 0.0,
+                        "jetson_nano": 0.0,
+                        "desktop_pc": 0.0,
+                        "aws_server": 0.0,
+                        "size_score_latency": 0.0
+                    })
+                    print(f"[WARN] SizeScore metric failed but still populated: {e}")
+                else:
+                    print(f"[WARN] Metric '{name}' failed: {e}")
+                    self.results[name] = 0.0
+                    self.results[f"{name}_latency"] = 0.0
 
-        return results
+        return self.results
+
+    @staticmethod
+    def main(model_url: str):
+        """
+        Fetches model data using MetricDataFetcher and prints all metric scores.
+        """
+        fetcher = MetricDataFetcher()
+        model_data = fetcher.fetch_Modeldata(model_url)  # returns a dictionary
+
+        scorer = MetricScorer()
+        scores = scorer.score_all_metrics(model_data)
+
+        print(f"Metric scores for model: {model_url}")
+        for key, value in scores.items():
+            print(f"{key}: {value}")
+
+
+if __name__ == "__main__":
+    # Example usage: replace with your Hugging Face model URL
+    MetricScorer.main("https://huggingface.co/google/gemma-3-270m")

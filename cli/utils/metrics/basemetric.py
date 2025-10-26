@@ -14,7 +14,7 @@ class BaseMetric(ABC):
         self.latency: float = 0.0
 
     @abstractmethod
-    def calculate_metric(self, data: Dict[str, Any]) -> float:
+    def calculate_metric(self, data: Dict[str, Any]):
         """
         Abstract method to calculate the metric based on provided data.
         Must be implemented by all subclasses.

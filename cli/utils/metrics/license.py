@@ -17,7 +17,7 @@ class LicenseMetric(BaseMetric):
         super().__init__()
         self.datafetcher = LicenseDataFetcher()
 
-    def calculate_metric(self, data: Dict[str, Any]) -> float:
+    def calculate_metric(self, data: Dict[str, Any]):
         # Fetch license info
         license_name = data.get("license", "unknown").lower()
         # Define license categories
@@ -33,11 +33,10 @@ class LicenseMetric(BaseMetric):
         if license_name == "custom":
             self.score = 0.5
         elif license_name == "unknown":
-            self.score = 0.2
+            self.score = 0.0
         elif any(key in license_name for key in high_quality):
             self.score = 1.0
         elif any(key in license_name for key in medium_quality):
             self.score = 0.75
         else:
-            self.score = 0
-        return self.score
+            self.score = 0.4

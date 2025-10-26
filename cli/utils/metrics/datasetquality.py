@@ -10,7 +10,6 @@ class DatasetQualityMetric(BaseMetric):
     def __init__(self):
         super().__init__()
 
-    def calculate_metric(self, data: Dict[str, Any]) -> float:
+    def calculate_metric(self, data: Dict[str, Any]):
         # Implement your dataset quality metric calculation logic here
         self.score = 0.0
-        return self.score

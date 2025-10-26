@@ -49,7 +49,7 @@ class MetricDataFetcher:
 
 if __name__ == "__main__":
     # Example URL — Hugging Face Gemma 3 model
-    test_url = "https://huggingface.co/google/gemma-3-12b-it"
+    test_url = "https://huggingface.co/google/gemma-3-270m"
 
     print("🔍 Fetching model metadata and metrics...")
     fetcher = MetricDataFetcher()
