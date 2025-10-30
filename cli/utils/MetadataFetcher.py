@@ -56,3 +56,30 @@ class MetadataFetcher:
         response = requests.get(api_url, headers=self.headers)
         response.raise_for_status()
         return response.json()  # Return full raw metadata
+
+
+if __name__ == "__main__":
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(description="Fetch metadata for a model, dataset, or GitHub repo URL")
+    parser.add_argument("url", type=str, help="URL of the model, dataset, or GitHub repository")
+    parser.add_argument("--github-token", type=str, default=None, help="GitHub token if needed for private repos")
+    args = parser.parse_args()
+
+    fetcher = MetadataFetcher(github_token=args.github_token)
+
+    try:
+        metadata = fetcher.fetch(args.url)
+
+        # Save metadata to model.txt in the repo
+        repo_dir = os.path.dirname(os.path.abspath(__file__))  # directory of this script
+        file_path = os.path.join(repo_dir, "model.txt")
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=4)
+
+        print(f"Metadata saved to {file_path}")
+
+    except Exception as e:
+        print(f"Error fetching metadata: {e}")

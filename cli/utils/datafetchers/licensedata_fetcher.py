@@ -1,4 +1,4 @@
-from cli.utils.datafetchers.MDF.basemetricdata_fetcher import BaseDataFetcher
+from cli.utils.datafetchers.basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 
 

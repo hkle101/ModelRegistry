@@ -7,7 +7,7 @@ from cli.utils.metrics.license import LicenseMetric
 from cli.utils.metrics.rampuptime import RampUpTimeMetric
 from cli.utils.metrics.sizescore import SizeScoreMetric
 from cli.utils.metrics.performanceclaims import PerformanceClaimsMetric
-from cli.utils.datafetchers.MetricDataFetcher import MetricDataFetcher  # import your fetcher
+from cli.utils.MetricDataFetcher import MetricDataFetcher  # import your fetcher
 
 
 class MetricScorer:

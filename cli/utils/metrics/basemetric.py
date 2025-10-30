@@ -31,9 +31,18 @@ class BaseMetric(ABC):
         # Run the actual metric calculation
         self.calculate_metric(data)
         end_time = time.time()
-        # Compute latency in milliseconds
-        self.latency = (end_time - start_time) * 1000.0
+        # Compute latency in milliseconds and round values to 2 decimals
+        self.latency = round((end_time - start_time) * 1000.0, 2)
+
+        # Round score to 2 decimals for consistent output/storage
+        try:
+            # guard against non-float types (defensive)
+            self.score = round(float(self.score), 2)
+        except Exception:
+            # If rounding fails, leave the score as-is
+            pass
+
         return {
             "score": self.score,
-            "latency": self.latency
+            "latency": self.latency,
         }

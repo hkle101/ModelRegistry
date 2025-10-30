@@ -40,11 +40,19 @@ class SizeScoreMetric(BaseMetric):
         if model_size == "unknown" or model_size is None:
             return  # keep all scores as 0
 
-        # Calculate score for each device
-        self.raspberry_pi_score = min(1.0, self.device_limits_mb["raspberry_pi"] / model_size)
-        self.jetson_nano_score = min(1.0, self.device_limits_mb["jetson_nano"] / model_size)
-        self.desktop_pc_score = min(1.0, self.device_limits_mb["desktop_pc"] / model_size)
-        self.aws_server_score = min(1.0, self.device_limits_mb["aws_server"] / model_size)
+        # Calculate score for each device. Round at assignment to 2 decimals
+        self.raspberry_pi_score = round(
+            min(1.0, self.device_limits_mb["raspberry_pi"] / model_size), 2
+        )
+        self.jetson_nano_score = round(
+            min(1.0, self.device_limits_mb["jetson_nano"] / model_size), 2
+        )
+        self.desktop_pc_score = round(
+            min(1.0, self.device_limits_mb["desktop_pc"] / model_size), 2
+        )
+        self.aws_server_score = round(
+            min(1.0, self.device_limits_mb["aws_server"] / model_size), 2
+        )
 
     def getScores(self, data: Dict[str, Any]) -> Dict[str, float]:
         """
@@ -53,12 +61,15 @@ class SizeScoreMetric(BaseMetric):
         start_time = time.time()
         self.calculate_metric(data)
         end_time = time.time()
-        self.latency = (end_time - start_time) * 1000.0  # in milliseconds
 
+        # Measure latency (ms) and round to 2 decimals for consistent storage
+        self.latency = round((end_time - start_time) * 1000.0, 2)
+
+        # Return already-rounded scores and the rounded latency
         return {
             "raspberry_pi": self.raspberry_pi_score,
             "jetson_nano": self.jetson_nano_score,
             "desktop_pc": self.desktop_pc_score,
             "aws_server": self.aws_server_score,
-            "size_score_latency": self.latency
+            "size_score_latency": self.latency,
         }

@@ -2,14 +2,14 @@ import sys
 import json
 from typing import Dict, Any
 from cli.menu import Menu
-from cli.metrics.license_metric import LicenseMetric
-from cli.metrics.size_metric import SizeMetric
-from cli.metrics.bus_factor_metric import BusFactorMetric
-from cli.metrics.performance_claims_metric import PerformanceClaimsMetric
-from cli.metrics.rampup_metric import RampUpMetric
-from cli.metrics.dataset_and_code_metric import DatasetAndCodeMetric
-from cli.metrics.dataset_quality_metric import DatasetQualityMetric
-from cli.metrics.code_quality_metric import CodeQualityMetric
+from cli.Metric_tobedeleted.license_metric import LicenseMetric
+from cli.Metric_tobedeleted.size_metric import SizeMetric
+from cli.Metric_tobedeleted.bus_factor_metric import BusFactorMetric
+from cli.Metric_tobedeleted.performance_claims_metric import PerformanceClaimsMetric
+from cli.Metric_tobedeleted.rampup_metric import RampUpMetric
+from cli.Metric_tobedeleted.dataset_and_code_metric import DatasetAndCodeMetric
+from cli.Metric_tobedeleted.dataset_quality_metric import DatasetQualityMetric
+from cli.Metric_tobedeleted.code_quality_metric import CodeQualityMetric
 
 
 WEIGHTS = {

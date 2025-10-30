@@ -1,10 +1,10 @@
-from cli.utils.datafetchers.MDF.basemetricdata_fetcher import BaseDataFetcher
+from cli.utils.datafetchers.basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 
 
-class DatasetDataFetcher(BaseDataFetcher):
+class DatasetAndCodeDataFetcher(BaseDataFetcher):
     """
-    Class for fetching dataset-related data.
+    Class for fetching dataset and code-related data.
     """
 
     def __init__(self):

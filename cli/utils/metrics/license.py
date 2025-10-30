@@ -1,6 +1,6 @@
 from typing import Any, Dict
 from cli.utils.metrics.basemetric import BaseMetric
-from cli.utils.datafetchers.MDF.licensedata_fetcher import LicenseDataFetcher
+from cli.utils.datafetchers.licensedata_fetcher import LicenseDataFetcher
 
 
 class LicenseMetric(BaseMetric):

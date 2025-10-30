@@ -1,13 +1,13 @@
 from typing import Any, Dict
 from cli.utils.MetadataFetcher import MetadataFetcher
-from cli.utils.datafetchers.MDF.licensedata_fetcher import LicenseDataFetcher
-from cli.utils.datafetchers.MDF.busfactordata_fetcher import BusFactorDataFetcher
-from cli.utils.datafetchers.MDF.datasetdata_fetcher import DatasetDataFetcher
-from cli.utils.datafetchers.MDF.codequalitydata_fetcher import CodeQualityDataFetcher
-from cli.utils.datafetchers.MDF.sizedata_fetcher import SizeDataFetcher
-from cli.utils.datafetchers.MDF.performanceClaimsdata_fetcher import PerformanceClaimsDataFetcher
-from cli.utils.datafetchers.MDF.rampuptimedata_fetcher import RampUpTimeDataFetcher
-from cli.utils.datafetchers.MDF.datasetnCodedata_fetcher import DatasetAndCodeDataFetcher
+from cli.utils.datafetchers.licensedata_fetcher import LicenseDataFetcher
+from cli.utils.datafetchers.busfactordata_fetcher import BusFactorDataFetcher
+from cli.utils.datafetchers.datasetdata_fetcher import DatasetDataFetcher
+from cli.utils.datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
+from cli.utils.datafetchers.sizedata_fetcher import SizeDataFetcher
+from cli.utils.datafetchers.performanceClaimsdata_fetcher import PerformanceClaimsDataFetcher
+from cli.utils.datafetchers.rampuptimedata_fetcher import RampUpTimeDataFetcher
+from cli.utils.datafetchers.datasetnCodedata_fetcher import DatasetAndCodeDataFetcher
 
 
 class MetricDataFetcher:
