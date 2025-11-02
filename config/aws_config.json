@@ -1,0 +1,4 @@
+{
+  "s3_bucket": "your-bucket-name",
+  "region": "us-east-1"
+}

@@ -1,3 +1,5 @@
+# PowerShell run script for backend scaffold
+python -m uvicorn backend.app:app --reload
 <#
 Simple runner for repo2 (PowerShell)
 Usage:

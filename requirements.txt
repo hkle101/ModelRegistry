@@ -1,3 +1,14 @@
+# Core runtime
+fastapi>=0.95.0
+uvicorn[standard]>=0.22.0
+
+# Testing / linting
+pytest>=7.0.0
+flake8>=6.0.0
+
+# Optional utilities used by scaffolding
+requests>=2.0.0
+
 # Core runtime dependencies
 # Core runtime dependencies
 requests>=2.28.0            # HTTP client used across cli/url_handler and metrics

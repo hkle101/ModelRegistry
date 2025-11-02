@@ -1,12 +1,13 @@
 from typing import Dict, Any
-from cli.utils.metrics.codequality import CodeQualityMetric
-from cli.utils.metrics.datasetquality import DatasetQualityMetric
-from cli.utils.metrics.datasetandcodescore import DatasetAndCodeScoreMetric
-from cli.utils.metrics.busfactor import BusFactorMetric
-from cli.utils.metrics.license import LicenseMetric
-from cli.utils.metrics.rampuptime import RampUpTimeMetric
-from cli.utils.metrics.sizescore import SizeScoreMetric
-from cli.utils.metrics.performanceclaims import PerformanceClaimsMetric
+# Metrics are now top-level packages under `metrics`
+from metrics.codequality import CodeQualityMetric
+from metrics.datasetquality import DatasetQualityMetric
+from metrics.datasetandcodescore import DatasetAndCodeScoreMetric
+from metrics.busfactor import BusFactorMetric
+from metrics.license import LicenseMetric
+from metrics.rampuptime import RampUpTimeMetric
+from metrics.sizescore import SizeScoreMetric
+from metrics.performanceclaims import PerformanceClaimsMetric
 from cli.utils.MetricDataFetcher import MetricDataFetcher  # import your fetcher
 
 

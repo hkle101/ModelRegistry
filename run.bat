@@ -1,4 +1,7 @@
 @echo off
+REM Run backend (Windows)
+python -m uvicorn backend.app:app --reload
+@echo off
 REM Simple runner for repo2 (Windows cmd)
 REM Usage:
 REM   run.bat            -> run CLI (interactive)

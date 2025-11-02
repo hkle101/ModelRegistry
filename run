@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+# Run the backend FastAPI app with uvicorn (scaffold).
+uvicorn backend.app:app --reload
 
 #!/usr/bin/env bash
 # Simple runner for repo2. Usage:

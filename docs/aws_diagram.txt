@@ -1,0 +1,5 @@
+AWS architecture (placeholder):
+
+- CloudFront -> API Gateway -> Lambda (or ECS/Fargate running FastAPI)
+- S3 buckets for model artifacts
+- RDS / DynamoDB for registry metadata
