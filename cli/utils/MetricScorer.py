@@ -86,4 +86,4 @@ class MetricScorer:
 
 if __name__ == "__main__":
     # Example usage: replace with your Hugging Face model URL
-    MetricScorer.main("https://huggingface.co/google/gemma-3-270m")
+    MetricScorer.main("https://huggingface.co/bert-base-uncased")

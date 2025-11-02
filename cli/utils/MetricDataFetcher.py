@@ -33,6 +33,22 @@ class MetricDataFetcher:
             modeldata.update(fetcher.fetch_Modeldata(data))
         return modeldata
 
+    def fetch_from_metadata(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Process already-fetched raw metadata through the registered
+        small fetchers and return the combined model data dictionary.
+        """
+        modeldata: Dict[str, Any] = {}
+        for fetcher in self.fetchers:
+            # Each fetcher exposes fetch_Modeldata which accepts the raw
+            # metadata dict and returns a mapping of extracted fields.
+            try:
+                modeldata.update(fetcher.fetch_Modeldata(data))
+            except Exception:
+                # If a fetcher fails, continue — MetricScorer will handle
+                # missing fields by defaulting scores to 0.
+                continue
+        return modeldata
+
     def fetch_CodeData(self, url: str) -> Dict[str, Any]:
         data = self.MetaDataFetcher.fetch(url)
         codedata = {}
