@@ -1,39 +1,195 @@
 <!DOCTYPE html>
-<html>
-  <head><title>Model Registry</title></head>
-  <body>
-    <h1>Upload Model</h1>
-    <form id="uploadForm">
-      <input type="url" id="modelUrl" placeholder="Model URL">
-      <button type="submit">Upload</button>
-    </form>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Registry</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input[type="url"] {
+      flex: 1;
+      padding: 8px;
+      font-size: 1em;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    li button {
+      background-color: red;
+      color: white;
+      border: none;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+  </style>
+</head>
+<body>
 
-    <ul id="modelsList"></ul>
+  <h1>Model Registry</h1>
 
-    <script>
-      document.getElementById('uploadForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const url = document.getElementById('modelUrl').value;
-        await fetch('http://3.21.126.55/upload', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({model_url: url})
-        });
-        alert('Uploaded!');
-      };
+  <form id="uploadForm">
+    <input type="url" id="modelUrl" placeholder="Enter model URL" required>
+    <button type="submit">Upload</button>
+  </form>
 
-      async function loadModels() {
-        const res = await fetch('http://3.21.126.55/models');
-        const data = await res.json();
+  <ul id="modelsList"></ul>
+
+  <script>
+    async function loadModels() {
+      // Optional endpoint: if the backend exposes /models, populate list; otherwise hide it.
+      try {
+        const res = await fetch('/models');
         const ul = document.getElementById('modelsList');
         ul.innerHTML = '';
-        data.forEach(m => {
+
+        if (!res.ok) {
+          // If endpoint not present, do nothing
+          return;
+        }
+
+        let data = [];
+        try { data = await res.json(); } catch (_) { data = []; }
+
+        // For each model, fetch detailed metadata (Scores) and render a compact view
+        for (const m of data) {
           const li = document.createElement('li');
-          li.textContent = m;
+          const title = document.createElement('div');
+          title.style.flex = '1';
+          title.innerHTML = `<strong>${m}</strong>`;
+
+          const metaDiv = document.createElement('div');
+          metaDiv.style.fontSize = '0.9em';
+          metaDiv.style.marginTop = '6px';
+
+          // Try to fetch model details
+          try {
+            const detailRes = await fetch(`/models/${m}`);
+            if (detailRes.ok) {
+              const detail = await detailRes.json();
+              const scores = detail.Scores || detail.scores || {};
+
+              // Build a short summary string with a few key metrics
+              const keys = [
+                'code_quality',
+                'dataset_quality',
+                'dataset_and_code',
+                'bus_factor',
+                'license',
+                'ramp_up_time',
+                'performance_claims'
+              ];
+
+              const parts = [];
+              for (const k of keys) {
+                if (k in scores) parts.push(`${k}: ${scores[k]}`);
+              }
+
+              // Include size device scores if present
+              const sizeKeys = ['raspberry_pi','jetson_nano','desktop_pc','aws_server'];
+              for (const sk of sizeKeys) {
+                if (sk in scores) parts.push(`${sk}: ${scores[sk]}`);
+              }
+
+              metaDiv.textContent = parts.join(' | ');
+            } else {
+              metaDiv.textContent = '(details unavailable)';
+            }
+          } catch (e) {
+            metaDiv.textContent = '(details unavailable)';
+          }
+
+          const right = document.createElement('div');
+          right.style.marginLeft = '12px';
+
+          const delBtn = document.createElement('button');
+          delBtn.textContent = 'Delete';
+          delBtn.onclick = async () => {
+            if (confirm(`Delete model "${m}"?`)) {
+              await fetch(`/models/${m}`, { method: 'DELETE' });
+              loadModels();
+            }
+          };
+
+          right.appendChild(delBtn);
+
+          const container = document.createElement('div');
+          container.style.display = 'flex';
+          container.style.flexDirection = 'column';
+          container.appendChild(title);
+          container.appendChild(metaDiv);
+
+          li.appendChild(container);
+          li.appendChild(right);
           ul.appendChild(li);
-        });
+        }
+      } catch (err) {
+        // ignore; models listing is optional
+        console.debug('models listing not available', err);
       }
-      loadModels();
-    </script>
-  </body>
+    }
+
+    document.getElementById('uploadForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const url = document.getElementById('modelUrl').value;
+
+      try {
+        // POST to the scoring endpoint. The server expects { "url": "..." }
+        const res = await fetch('/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model_url: url })
+        });
+
+        // Try to parse JSON body if present
+        let payload = null;
+        try { payload = await res.json(); } catch (e) { /* empty body or not-json */ }
+
+        if (res.ok) {
+          document.getElementById('modelUrl').value = '';
+          // Show a simple success message with S3 path if available
+          const path = payload && payload.s3_path ? payload.s3_path : null;
+          alert('Upload successful' + (path ? `\nS3: ${path}` : ''));
+          loadModels();
+        } else {
+          // Try to extract an error message from JSON or fallback to statusText
+          const errMsg = (payload && (payload.error || payload.detail)) || res.statusText || 'Unknown error';
+          alert('Upload failed: ' + errMsg);
+        }
+      } catch (err) {
+        alert('Upload failed: ' + (err.message || err));
+      }
+    };
+
+    // Load models on page load
+    loadModels();
+  </script>
+
+</body>
 </html>
