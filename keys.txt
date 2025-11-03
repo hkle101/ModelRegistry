@@ -1,0 +1,5 @@
+access key ID: ASIAR5ZQOTNA774UNBVT
+secret key ID: WjqCQvvTjib74miXN/pNAKos7TMSBYMiXFtwPrpg
+
+ssh -i .\modelregistry-key.pem ubuntu@3.21.126.55
+

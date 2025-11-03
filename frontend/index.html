@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head><title>Model Registry</title></head>
+  <body>
+    <h1>Upload Model</h1>
+    <form id="uploadForm">
+      <input type="url" id="modelUrl" placeholder="Model URL">
+      <button type="submit">Upload</button>
+    </form>
+
+    <ul id="modelsList"></ul>
+
+    <script>
+      document.getElementById('uploadForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const url = document.getElementById('modelUrl').value;
+        await fetch('http://3.21.126.55/upload', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({model_url: url})
+        });
+        alert('Uploaded!');
+      };
+
+      async function loadModels() {
+        const res = await fetch('http://3.21.126.55/models');
+        const data = await res.json();
+        const ul = document.getElementById('modelsList');
+        ul.innerHTML = '';
+        data.forEach(m => {
+          const li = document.createElement('li');
+          li.textContent = m;
+          ul.appendChild(li);
+        });
+      }
+      loadModels();
+    </script>
+  </body>
+</html>

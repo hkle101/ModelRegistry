@@ -1,41 +1,73 @@
-name: CI/CD
+name: CI/CD Pipeline
 
 on:
-	push:
-		branches: [ main ]
-	pull_request:
-		branches: [ main ]
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-	lint-and-test:
-		runs-on: ubuntu-latest
-		steps:
-			- name: Checkout
-				uses: actions/checkout@v4
+  # -------------------------
+  # Continuous Integration
+  # -------------------------
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-			- name: Set up Python
-				uses: actions/setup-python@v4
-				with:
-					python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
 
-			- name: Install dependencies
-				run: |
-					python -m pip install --upgrade pip
-					pip install -r requirements.txt || true
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-			- name: Lint (flake8)
-				run: |
-					pip install flake8 || true
-					flake8 || true
+      - name: Lint code
+        run: |
+          pip install flake8
+          flake8 .
 
-			- name: Run tests
-				run: |
-					pip install pytest || true
-					pytest -q || true
+      - name: Run tests
+        run: |
+          pytest -v
 
-	deploy_placeholder:
-		runs-on: ubuntu-latest
-		needs: lint-and-test
-		steps:
-			- name: Deploy placeholder
-				run: echo "Add deployment steps here (e.g., AWS/GHActions deploy)"
+  # -------------------------
+  # Continuous Deployment
+  # -------------------------
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          port: 22
+          script: |
+            cd /home/ubuntu/ModelRegistry
+            git pull origin main
+            # If using Docker:
+            # docker-compose down
+            # docker-compose up -d --build
+            # Otherwise, restart service manually
+            systemctl restart modelregistry.service

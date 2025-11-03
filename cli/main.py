@@ -1,88 +1,70 @@
-"""CLI entrypoint for the model-registry scaffold.
+from __future__ import annotations
 
-This module provides a minimal, testable CLI that reads URLs from a file
-or accepts a single `--url` argument and prints JSON results. It delegates
-data fetching and scoring to modules under `cli.utils` and the top-level
-`metrics` and `datafetchers` packages.
-"""
-
-import sys
+import argparse
 import json
-from typing import Dict, Any
-from cli.menu import Menu
-from cli.utils.MetricScorer import MetricScorer
+import os
+from datetime import datetime
+from typing import List
+
+from cli.utils.ModelManager import ModelManager
 
 
-
-WEIGHTS = {
-    "ramp_up_time": 0.20,
-    "bus_factor": 0.15,
-    "performance_claims": 0.15,
-    "license": 0.10,
-    "size_score": 0.15,
-    "dataset_and_code_score": 0.15,
-    "code_quality": 0.10,
-}
+def read_urls(path: str) -> List[str]:
+    """Read URLs from a file, ignoring empty lines."""
+    with open(path, "r", encoding="utf-8") as f:
+        lines = [l.strip() for l in f.readlines()]
+    return [l for l in lines if l]
 
 
-def process_url(url: str) -> Dict[str, Any]:
-    """Process a single URL by fetching data and scoring metrics.
-
-    Returns a dictionary suitable for JSON serialization.
-    """
-    fetcher = None
-    scorer = MetricScorer()
-
-    # MetricScorer expects model data fetched by MetricDataFetcher; the
-    # MetricScorer.main() convenience method runs fetcher internally, but here
-    # we reuse the same flow for a single URL.
-    return scorer._score_url(url)
+def ensure_dir(path: str) -> None:
+    """Create directory if it doesn't exist."""
+    os.makedirs(path, exist_ok=True)
 
 
-def main(argv: list[str] | None = None) -> int:
-    """CLI entrypoint.
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Score models from URLs")
+    parser.add_argument("--urls-file", default="urls.txt", help="File with one URL per line")
+    parser.add_argument("--url", help="Score a single URL (overrides --urls-file)")
+    parser.add_argument("--out-dir", default="scored", help="Directory to write JSON results")
+    parser.add_argument("--quiet", action="store_true", help="Only print summary paths")
+    args = parser.parse_args(argv)
 
-    Usage:
-      - Interactive menu: no arguments
-      - Score a urls file: main.py path/to/urls.txt
-      - Score a single URL: main.py --url https://huggingface.co/...
-    """
-    argv = argv or sys.argv[1:]
-    menu = Menu()
+    mgr = ModelManager()
+    ensure_dir(args.out_dir)
 
-    # no args -> interactive only when running from a terminal.
-    # When stdin is captured (for example, during pytest), behave like the
-    # previous implementation and print usage / exit so tests that call
-    # main() programmatically still receive SystemExit.
-    if not argv:
-        if sys.stdin is not None and sys.stdin.isatty():
-            menu.interactive()
-            return 0
-        # non-interactive environment: print usage and exit with error
-        print("Usage: python3 -m cli.main URL_FILE")
-        raise SystemExit(1)
+    urls = [args.url] if args.url else read_urls(args.urls_file)
+    results = []
 
-    # single URL via --url
-    if len(argv) >= 2 and argv[0] == "--url":
-        url = argv[1]
-        res = process_url(url)
-        print(json.dumps(res, separators=(",", ":")))
-        net = res.get("net_score")
-        if net is not None:
-            print(f"net_score: {net}", file=sys.stderr)
-        return 0
-
-    # otherwise treat first arg as urls file
-    urls_file = argv[0]
-    urls = menu.read_urls(urls_file)
     for u in urls:
-        result = process_url(u)
-        print(json.dumps(result, separators=(",", ":")))
-        net = result.get("net_score")
-        if net is not None:
-            print(f"net_score: {net}", file=sys.stderr)
-    return 0
+        try:
+            res = mgr.ScoreModel(u)
+        except Exception as e:
+            print(f"[ERROR] Scoring failed for {u}: {e}")
+            continue
+
+        # Only store Name and Score in the JSON
+        json_result = res
+
+        ts = datetime.utcnow().isoformat(timespec="seconds").replace(":", "-")
+        out_path = os.path.join(args.out_dir, f"{json_result['Name']}_{ts}.json")
+
+        try:
+            with open(out_path, "w", encoding="utf-8") as f:
+                json.dump(json_result, f, indent=2)
+        except Exception as e:
+            print(f"[WARN] Failed to write {out_path}: {e}")
+
+        results.append((u, out_path))
+
+        if not args.quiet:
+            print(f"\nScored {u} -> {out_path}")
+            print(json.dumps(json_result, indent=2))
+
+    # Print a short summary
+    print("\nSummary:")
+    for u, p in results:
+        print(f" - {u} -> {p}")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
