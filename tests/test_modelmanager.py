@@ -1,17 +1,20 @@
 import pytest
-from cli.utils.ModelManager import ModelManager
+from phase2.ModelRegistry.cli.utils.ArtifactManager import ModelManager
 
+
+@pytest.mark.integration
 def test_model_lifecycle():
     manager = ModelManager()
     url = "https://huggingface.co/bert-base-uncased"
 
-    score_dict = manager.ScoreModel(url)
-    s3_path = manager.SaveModelMetadata(score_dict)
-    assert score_dict["Name"] in manager.ListModels()
+    # Score and save a model artifact
+    score_dict = manager.ScoreArtifact("model", url)
+    manager.SaveArtifactMetadata("model", score_dict)
+    assert score_dict["id"] in manager.ListArtifacts("model")
 
-    metadata = manager.GetModelMetadata(score_dict["Name"])
-    assert metadata["Name"] == score_dict["Name"]
-    assert metadata["Scores"] == score_dict["Scores"]
+    metadata = manager.GetArtifactMetadata("model", score_dict["id"])
+    assert metadata["Name"] == score_dict["id"]
+    assert metadata["Scores"] == score_dict["scores"]
 
-    manager.DeleteModelMetadata(score_dict["Name"])
-    assert score_dict["Name"] not in manager.ListModels()
+    manager.DeleteArtifactMetadata("model", score_dict["id"])
+    assert score_dict["id"] not in manager.ListArtifacts("model")

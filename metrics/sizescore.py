@@ -71,5 +71,5 @@ class SizeScoreMetric(BaseMetric):
             "jetson_nano": self.jetson_nano_score,
             "desktop_pc": self.desktop_pc_score,
             "aws_server": self.aws_server_score,
-            "size_score_latency": self.latency,
+            "latency": self.latency,
         }

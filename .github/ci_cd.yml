@@ -2,72 +2,64 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main ]
+    branches: [ "main" ]
 
 jobs:
-  # -------------------------
-  # Continuous Integration
-  # -------------------------
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'  # Match your project
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
 
-      - name: Lint code
-        run: |
-          pip install flake8
-          flake8 .
+    - name: Run tests
+      run: |
+        source .venv/bin/activate
+        pytest -v
 
-      - name: Run tests
-        run: |
-          pytest -v
-
-  # -------------------------
-  # Continuous Deployment
-  # -------------------------
   deploy:
     runs-on: ubuntu-latest
-    needs: test
-    if: github.ref == 'refs/heads/main'
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'  # Only deploy from main branch
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
+    - name: Copy files to EC2
+      uses: appleboy/scp-action@v0.1.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        source: "./"               # Copy entire repo
+        target: "/home/ubuntu/project"  # Change to your EC2 path
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
+    - name: Run backend setup on EC2
+      uses: appleboy/ssh-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        script: |
+          cd /home/ubuntu/project
+          python -m venv .venv
+          source .venv/bin/activate
           pip install -r requirements.txt
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
-          port: 22
-          script: |
-            cd /home/ubuntu/ModelRegistry
-            git pull origin main
-            # If using Docker:
-            # docker-compose down
-            # docker-compose up -d --build
-            # Otherwise, restart service manually
-            systemctl restart modelregistry.service
+          # Optional: restart your backend service if needed

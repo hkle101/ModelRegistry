@@ -8,4 +8,5 @@ __all__ = [
     "MetadataFetcher",
     "MetricDataFetcher",
     "MetricScorer",
+    "ModelManager",
 ]
