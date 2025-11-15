@@ -1,0 +1,81 @@
+openapi: 3.0.2
+info:
+  title: ECE 461 - Fall 2025 - Project Phase 2 (BASELINE endpoint: /artifact/model/{id}/lineage GET)
+  version: 3.4.2
+  description: |
+    Single-endpoint extract for GET /artifact/model/{id}/lineage
+paths:
+  /artifact/model/{id}/lineage:
+    get:
+      parameters:
+        - name: id
+          description: artifact id
+          schema:
+            $ref: "#/components/schemas/ArtifactID"
+          in: path
+          required: true
+        - name: X-Authorization
+          description: ""
+          schema:
+            $ref: "#/components/schemas/AuthenticationToken"
+          in: header
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactLineageGraph"
+              examples:
+                ExampleLineageGraph:
+                  value:
+                    nodes:
+                      - artifact_id: 3847247294
+                        name: audience-classifier
+                        source: config_json
+                      - artifact_id: 5738291045
+                        name: bookcorpus
+                        source: upstream_dataset
+                    edges:
+                      - from_node_artifact_id: 5738291045
+                        to_node_artifact_id: 3847247294
+                        relationship: fine_tuning_dataset
+          description: Lineage graph extracted from structured metadata. (BASELINE)
+        "400":
+          description: "The lineage graph cannot be computed because the artifact metadata is missing or malformed."
+        "403":
+          description: Authentication failed due to invalid or missing AuthenticationToken.
+        "404":
+          description: Artifact does not exist.
+      operationId: ArtifactLineageGet
+      summary: Retrieve the lineage graph for this artifact. (BASELINE)
+components:
+  schemas:
+    AuthenticationToken:
+      type: string
+    ArtifactID:
+      type: string
+    ArtifactLineageGraph:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArtifactLineageNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArtifactLineageEdge"
+    ArtifactLineageNode:
+      type: object
+      properties:
+        artifact_id: { type: string }
+        name: { type: string }
+        source: { type: string }
+        metadata: { type: object }
+    ArtifactLineageEdge:
+      type: object
+      properties:
+        from_node_artifact_id: { type: string }
+        to_node_artifact_id: { type: string }
+        relationship: { type: string }

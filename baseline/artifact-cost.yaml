@@ -1,0 +1,95 @@
+openapi: 3.0.2
+info:
+  title: ECE 461 - Fall 2025 - Project Phase 2 (BASELINE endpoint: /artifact/{artifact_type}/{id}/cost GET)
+  version: 3.4.2
+  description: |
+    Single-endpoint extract for GET /artifact/{artifact_type}/{id}/cost
+paths:
+  /artifact/{artifact_type}/{id}/cost:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArtifactCost"
+              examples:
+                ExampleWithoutDependency:
+                  value: |
+                    {
+                      "3847247294": {
+                        "total_cost": 412.5
+                      }
+                    }
+                ExampleWithDependency:
+                  value: |
+                    {
+                      "3847247294": {
+                        "standalone_cost": 412.5,
+                        "total_cost": 1255.0
+                      },
+                      "4628173590": {
+                        "standalone_cost": 280.0,
+                        "total_cost": 280.0
+                      },
+                      "5738291045": {
+                        "standalone_cost": 562.5,
+                        "total_cost": 562.5
+                      }
+                    }
+          description: Return the total cost of the artifact, and its dependencies
+        "400":
+          description: "There is missing field(s) in the artifact_type or artifact_id or it is formed improperly, or is invalid."
+        "403":
+          description: Authentication failed due to invalid or missing AuthenticationToken.
+        "404":
+          description: Artifact does not exist.
+        "500":
+          description: The artifact cost calculator encountered an error.
+      summary: "Get the cost of an artifact (BASELINE)"
+    parameters:
+      - name: artifact_type
+        schema:
+          $ref: "#/components/schemas/ArtifactType"
+        in: path
+        required: true
+      - name: id
+        schema:
+          $ref: "#/components/schemas/ArtifactID"
+        in: path
+        required: true
+      - name: dependency
+        schema:
+          type: boolean
+          default: false
+        in: query
+      - name: X-Authorization
+        description: ""
+        schema:
+          $ref: "#/components/schemas/AuthenticationToken"
+        in: header
+        required: true
+components:
+  schemas:
+    AuthenticationToken:
+      type: string
+    ArtifactType:
+      type: string
+      enum: [model, dataset, code]
+    ArtifactID:
+      type: string
+    ArtifactCost:
+      type: object
+      additionalProperties:
+        type: object
+        properties:
+          standalone_cost:
+            type: number
+            description: The standalone cost of this artifact excluding dependencies. Required when `dependency = true` in the request.
+          total_cost:
+            type: number
+            description: |
+              The total cost of the artifact. When `dependency` is not set, this should return the standalone cost,
+              and when it is set, this field should return the sum of the costs of all the dependencies.
+        required:
+          - total_cost

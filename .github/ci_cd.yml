@@ -11,25 +11,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'  # Match your project
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'  # Match your project
 
-    - name: Install dependencies
-      run: |
-        python -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt
 
-    - name: Run tests
-      run: |
-        source .venv/bin/activate
-        pytest -v
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
+          python -m pytest -v
 
   deploy:
     runs-on: ubuntu-latest
@@ -37,29 +37,33 @@ jobs:
     if: github.ref == 'refs/heads/main'  # Only deploy from main branch
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Copy files to EC2
-      uses: appleboy/scp-action@v0.1.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        port: 22
-        source: "./"               # Copy entire repo
-        target: "/home/ubuntu/project"  # Change to your EC2 path
-
-    - name: Run backend setup on EC2
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        port: 22
-        script: |
-          cd /home/ubuntu/project
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install -r requirements.txt
-          # Optional: restart your backend service if needed
+      - name: Run backend setup on EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            cd /home/ubuntu/ModelRegistry   # Use your actual cloned repo path
+            
+            # Pull latest changes from main branch
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Create virtual environment if it doesn't exist
+            if [ ! -d ".venv" ]; then
+                python3 -m venv .venv
+            fi
+            
+            # Activate virtual environment
+            source .venv/bin/activate
+            
+            # Install/update dependencies if anything changed
+            pip install -r requirements.txt --upgrade
+            
+            # Optional: restart backend service
+            # sudo systemctl restart my-backend.service

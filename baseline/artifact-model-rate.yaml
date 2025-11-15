@@ -1,0 +1,105 @@
+openapi: 3.0.2
+info:
+  title: ECE 461 - Fall 2025 - Project Phase 2 (BASELINE endpoint: /artifact/model/{id}/rate GET)
+  version: 3.4.2
+  description: |
+    Single-endpoint extract for GET /artifact/model/{id}/rate
+paths:
+  /artifact/model/{id}/rate:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelRating"
+          description: |
+            Return the rating. Only use this if each metric was computed successfully.
+        "400":
+          description: "There is missing field(s) in the artifact_id or it is formed improperly, or is invalid."
+        "403":
+          description: Authentication failed due to invalid or missing AuthenticationToken.
+        "404":
+          description: Artifact does not exist.
+        "500":
+          description: The artifact rating system encountered an error while computing at least one metric.
+      operationId: ModelArtifactRate
+      summary: "Get ratings for this model artifact. (BASELINE)"
+    parameters:
+      - name: id
+        schema:
+          $ref: "#/components/schemas/ArtifactID"
+        in: path
+        required: true
+      - name: X-Authorization
+        description: ""
+        schema:
+          $ref: "#/components/schemas/AuthenticationToken"
+        in: header
+        required: true
+components:
+  schemas:
+    AuthenticationToken:
+      type: string
+    ArtifactID:
+      type: string
+    ModelRating:
+      type: object
+      properties:
+        name:
+          type: string
+        category:
+          type: string
+        net_score:
+          type: number
+        net_score_latency:
+          type: number
+        ramp_up_time:
+          type: number
+        ramp_up_time_latency:
+          type: number
+        bus_factor:
+          type: number
+        bus_factor_latency:
+          type: number
+        performance_claims:
+          type: number
+        performance_claims_latency:
+          type: number
+        license:
+          type: number
+        license_latency:
+          type: number
+        dataset_and_code_score:
+          type: number
+        dataset_and_code_score_latency:
+          type: number
+        dataset_quality:
+          type: number
+        dataset_quality_latency:
+          type: number
+        code_quality:
+          type: number
+        code_quality_latency:
+          type: number
+        reproducibility:
+          type: number
+        reproducibility_latency:
+          type: number
+        reviewedness:
+          type: number
+        reviewedness_latency:
+          type: number
+        tree_score:
+          type: number
+        tree_score_latency:
+          type: number
+        size_score:
+          type: object
+          properties:
+            raspberry_pi: { type: number }
+            jetson_nano: { type: number }
+            desktop_pc: { type: number }
+            aws_server: { type: number }
+        size_score_latency:
+          type: number

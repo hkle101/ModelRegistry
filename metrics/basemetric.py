@@ -10,8 +10,9 @@ class BaseMetric(ABC):
     """
 
     def __init__(self):
-        self.score: float = 0.0
-        self.latency: float = 0.0
+        # Internal storage; outputs are converted to Decimal
+        self.score: float = 0.00
+        self.latency: float = 0.00
 
     @abstractmethod
     def calculate_metric(self, data: Dict[str, Any]):
@@ -22,7 +23,7 @@ class BaseMetric(ABC):
         """
         pass
 
-    def getScores(self, data: Dict[str, Any]) -> Dict[str, float]:
+    def getScores(self, data: Dict[str, Any]) -> Dict[str, any]:
         """
         Calculates the metric and measures its latency.
         Returns both the score and latency.
@@ -33,15 +34,7 @@ class BaseMetric(ABC):
         end_time = time.time()
         # Compute latency in milliseconds and round values to 2 decimals
         self.latency = round((end_time - start_time) * 1000.0, 2)
-
-        # Round score to 2 decimals for consistent output/storage
-        try:
-            # guard against non-float types (defensive)
-            self.score = round(float(self.score), 2)
-        except Exception:
-            # If rounding fails, leave the score as-is
-            pass
-
+        self.score = round(float(self.score), 2)
         return {
             "score": self.score,
             "latency": self.latency,
