@@ -1,0 +1,64 @@
+openapi: 3.0.2
+info:
+  title: ECE 461 - Fall 2025 - Project Phase 2 (BASELINE endpoint: /artifact/model/{id}/license-check POST)
+  version: 3.4.2
+  description: |
+    Single-endpoint extract for POST /artifact/model/{id}/license-check
+paths:
+  /artifact/model/{id}/license-check:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimpleLicenseCheckRequest"
+            examples:
+              ExampleSimpleLicenseCheckRequest:
+                value:
+                  github_url: https://github.com/google-research/bert
+        required: true
+      parameters:
+        - name: id
+          description: artifact id
+          schema:
+            $ref: "#/components/schemas/ArtifactID"
+          in: path
+          required: true
+        - name: X-Authorization
+          description: ""
+          schema:
+            $ref: "#/components/schemas/AuthenticationToken"
+          in: header
+          required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: boolean
+              examples:
+                ExampleSimpleLicenseCheckResult:
+                  value: true
+          description: License compatibility analysis produced successfully. (BASELINE)
+        "400":
+          description: "The license check request is malformed or references an unsupported usage context."
+        "403":
+          description: Authentication failed due to invalid or missing AuthenticationToken.
+        "404":
+          description: The artifact or GitHub project could not be found.
+        "502":
+          description: External license information could not be retrieved.
+      operationId: ArtifactLicenseCheck
+      summary: Assess license compatibility for fine-tune and inference usage. (BASELINE)
+components:
+  schemas:
+    AuthenticationToken:
+      type: string
+    ArtifactID:
+      type: string
+    SimpleLicenseCheckRequest:
+      type: object
+      properties:
+        github_url:
+          type: string
+          format: uri

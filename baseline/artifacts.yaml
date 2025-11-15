@@ -1,0 +1,132 @@
+openapi: 3.0.2
+info:
+  title: ECE 461 - Fall 2025 - Project Phase 2 (BASELINE endpoint: /artifacts)
+  version: 3.4.2
+  description: |
+    Single-endpoint extract for /artifacts from baseline_endpoints.yaml
+paths:
+  /artifacts:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/ArtifactQuery"
+        required: true
+      parameters:
+        - name: offset
+          description: |
+            Provide this for pagination. If not provided, returns the first page of results.
+          schema:
+            $ref: "#/components/schemas/EnumerateOffset"
+          in: query
+          required: false
+      responses:
+        "200":
+          headers:
+            offset:
+              schema:
+                $ref: "#/components/schemas/EnumerateOffset"
+              examples:
+                ExampleRequest:
+                  value: "3"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArtifactMetadata"
+              examples:
+                ExampleResponse:
+                  value:
+                    - name: audience-classifier
+                      id: 3847247294
+                      type: model
+                    - name: bookcorpus
+                      id: 5738291045
+                      type: dataset
+                    - name: google-research-bert
+                      id: 9182736455
+                      type: code
+          description: List of artifacts
+        "400":
+          description: "There is missing field(s) in the artifact_query or it is formed improperly, or is invalid."
+        "403":
+          description: Authentication failed due to invalid or missing AuthenticationToken.
+        "413":
+          description: Too many artifacts returned.
+      operationId: ArtifactsList
+      summary: Get the artifacts from the registry. (BASELINE)
+      description: |
+        Get any artifacts fitting the query.
+        Search for artifacts satisfying the indicated query.
+
+        If you want to enumerate all artifacts, provide an array with a single artifact_query whose name is "*".
+
+        The response is paginated; the response header includes the offset to use in the next query.
+    parameters:
+      - name: X-Authorization
+        description: ""
+        schema:
+          $ref: "#/components/schemas/AuthenticationToken"
+        in: header
+        required: true
+components:
+  schemas:
+    AuthenticationToken:
+      description: |
+        The spec permits you to use any token format you like. You could, for example, look into JSON Web Tokens ("JWT", pronounced "jots"): https://jwt.io.
+      type: string
+    EnumerateOffset:
+      description: Offset in pagination.
+      type: string
+      example: "1"
+    ArtifactMetadata:
+      description: |-
+        The `name` is provided when uploading an artifact.
+
+        The `id` is used as an internal identifier for interacting with existing artifacts and distinguishes artifacts that share a name.
+      required:
+        - name
+        - id
+        - type
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/ArtifactName"
+        id:
+          $ref: "#/components/schemas/ArtifactID"
+        type:
+          $ref: "#/components/schemas/ArtifactType"
+    ArtifactQuery:
+      description: ""
+      required:
+        - name
+      type: object
+      properties:
+        name:
+          $ref: "#/components/schemas/ArtifactName"
+          description: ""
+        types:
+          description: Optional list of artifact types to filter results.
+          type: array
+          items:
+            $ref: "#/components/schemas/ArtifactType"
+    ArtifactType:
+      description: "Artifact category."
+      type: string
+      enum: [model, dataset, code]
+    ArtifactID:
+      description: "Unique identifier for use with artifact endpoints."
+      example: "48472749248"
+      type: string
+      pattern: '^[a-zA-Z0-9\-]+$'
+    ArtifactName:
+      description: |
+        Name of an artifact.
+
+        - Names should only use typical "keyboard" characters.
+        - The name "*" is reserved. See the `/artifacts` API for its meaning.
+      type: string

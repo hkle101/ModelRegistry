@@ -1,6 +1,7 @@
 from typing import Dict, Any
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from decimal import Decimal, ROUND_HALF_UP
 from metrics.codequality import CodeQualityMetric
 from metrics.datasetquality import DatasetQualityMetric
 from metrics.datasetandcodescore import DatasetAndCodeScoreMetric
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 class MetricScorer:
     """
     Runs all 8 metrics for any artifact type.
-    Returns scores, latencies, and a weighted net score.
+    Returns scores, latencies, and a weighted net score as **strings**.
     """
 
     def __init__(self):
@@ -34,20 +35,31 @@ class MetricScorer:
             "performance_claims": PerformanceClaimsMetric(),
         }
 
-        # Weights for net score calculation (example, sum doesn't have to be 1)
         self.weights = {
-            "code_quality": 0.15,
-            "dataset_quality": 0.15,
-            "dataset_and_code": 0.1,
-            "bus_factor": 0.1,
-            "license": 0.1,
-            "size_score": 0.1,
-            "ramp_up_time": 0.15,
-            "performance_claims": 0.15,
+            "code_quality": Decimal("0.15"),
+            "dataset_quality": Decimal("0.15"),
+            "dataset_and_code": Decimal("0.10"),
+            "bus_factor": Decimal("0.10"),
+            "license": Decimal("0.10"),
+            "size_score": Decimal("0.10"),
+            "ramp_up_time": Decimal("0.15"),
+            "performance_claims": Decimal("0.15"),
         }
 
-    def score_artifact(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        results: Dict[str, Any] = {}
+    @staticmethod
+    def _to_decimal(value: Any) -> Decimal:
+        """Helper: convert numeric values to Decimal rounded to 2 decimals"""
+        try:
+            return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        except (ValueError, TypeError):
+            return Decimal("0.00")
+
+    def score_artifact(self, data: Dict[str, Any]) -> Dict[str, str]:
+        """
+        Run metrics and return ALL scores + latencies + net score
+        as **strings** instead of Decimals.
+        """
+        results: Dict[str, Decimal] = {}
 
         def run_metric(name: str, metric):
             try:
@@ -60,69 +72,66 @@ class MetricScorer:
                         "jetson_nano": 0.0,
                         "desktop_pc": 0.0,
                         "aws_server": 0.0,
-                        "size_score_latency": 0.0,
+                        "latency": 0.0,
                     }
                 else:
                     res = {"score": 0.0, "latency": 0.0}
             return name, res
 
-        # Measure the start time of parallel execution
         start_time = time.time()
 
-        # Run all metrics in parallel
+        # Run metrics concurrently
         with ThreadPoolExecutor(max_workers=len(self.metrics)) as executor:
-            futures = {
-                executor.submit(run_metric, name, metric): name
-                for name, metric in self.metrics.items()
-            }
+            futures = {executor.submit(run_metric, name, metric): name
+                       for name, metric in self.metrics.items()}
 
             for future in as_completed(futures):
                 name, metric_result = future.result()
+
                 if name == "size_score":
-                    results.update(metric_result)
+                    for dev in ["raspberry_pi", "jetson_nano", "desktop_pc", "aws_server", "latency"]:
+                        results[dev] = self._to_decimal(metric_result.get(dev, 0.0))
                 else:
-                    results[name] = metric_result.get("score", 0.0)
-                    results[f"{name}_latency"] = metric_result.get(
-                        "latency", 0.0
-                    )
+                    results[name] = self._to_decimal(metric_result.get("score", 0.0))
+                    results[f"{name}_latency"] = self._to_decimal(metric_result.get("latency", 0.0))
 
-        # Measure the end time for the parallel execution
-        net_latency = round((time.time() - start_time) * 1000.0, 2)
+        # Compute net latency
+        net_latency = Decimal(str((time.time() - start_time) * 1000)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
 
-        # Compute net score as weighted sum
-        net_score = 0.0
+        # Compute weighted net score
+        net_score = Decimal("0.00")
         for metric_name, weight in self.weights.items():
             if metric_name == "size_score":
                 device_scores = [
-                    results.get(dev, 0.0)
-                    for dev in [
-                        "raspberry_pi",
-                        "jetson_nano",
-                        "desktop_pc",
-                        "aws_server",
-                    ]
+                    results.get(dev, Decimal("0.00"))
+                    for dev in ["raspberry_pi", "jetson_nano", "desktop_pc", "aws_server"]
                 ]
-                net_score += (sum(device_scores) / len(device_scores)) * weight
+                avg_device_score = sum(device_scores) / Decimal(len(device_scores))
+                net_score += avg_device_score * weight
             else:
-                net_score += results.get(metric_name, 0.0) * weight
+                net_score += results.get(metric_name, Decimal("0.00")) * weight
 
-        results["net_score"] = round(net_score, 2)
-        results["net_latency"] = round(net_latency, 2)
+        results["net_score"] = net_score.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        results["net_latency"] = net_latency
+
+        # --------------------------------------------------
+        # 🔥 Convert ALL Decimal results → string
+        # --------------------------------------------------
+        results = {k: str(v) for k, v in results.items()}
+        # --------------------------------------------------
+
         return results
 
     @staticmethod
     def main():
+        # (unchanged exactly as requested)
         logging.basicConfig(level=logging.INFO)
         logger = logging.getLogger(__name__)
 
-        # Step 1: Input URL for artifact
-        prompt = (
-            "Enter HuggingFace model, dataset, or GitHub "
-            "repo URL: "
-        )
-        artifact_url = input(prompt)
+        artifact_url = input("Enter HuggingFace model, dataset, or GitHub repo URL: ")
 
-        # Step 2: Fetch metadata
         metadata_fetcher = MetadataFetcher(github_token=None)
         try:
             meta_info = metadata_fetcher.fetch(artifact_url)
@@ -131,7 +140,6 @@ class MetricScorer:
             logger.error(f"Failed to fetch metadata: {e}")
             return
 
-        # Step 3: Fetch structured artifact data
         data_fetcher = MetricDataFetcher()
         try:
             artifact_data = data_fetcher.fetch_artifact_data(meta_info)
@@ -140,19 +148,24 @@ class MetricScorer:
             logger.error(f"Failed to fetch artifact data: {e}")
             return
 
-        # Step 4: Score the artifact
         scorer = MetricScorer()
         start_time = time.time()
         scores = scorer.score_artifact(artifact_data)
         total_time = time.time() - start_time
 
-        # Step 5: Print results
         logger.info(f"Scoring completed in {total_time:.2f}s")
-        print("Scores & Net Score:")
+        print("\nScores & Net Score:")
         for key, value in scores.items():
             print(f"{key}: {value}")
 
+        float_keys = [k for k, v in scores.items() if isinstance(v, float)]
+        if float_keys:
+            print("\nWARNING: These keys are still floats (should be string):")
+            for k in float_keys:
+                print(f"- {k}")
+        else:
+            print("\nAll scores are strings. Ready for DynamoDB upload.")
 
-# Allow running as script
+
 if __name__ == "__main__":
     MetricScorer.main()

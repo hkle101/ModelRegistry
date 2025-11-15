@@ -54,7 +54,7 @@ class SizeScoreMetric(BaseMetric):
             min(1.0, self.device_limits_mb["aws_server"] / model_size), 2
         )
 
-    def getScores(self, data: Dict[str, Any]) -> Dict[str, float]:
+    def getScores(self, data: Dict[str, Any]) -> Dict[str, any]:
         """
         Calculate metric, measure latency, and return them
         """
@@ -64,6 +64,10 @@ class SizeScoreMetric(BaseMetric):
 
         # Measure latency (ms) and round to 2 decimals for consistent storage
         self.latency = round((end_time - start_time) * 1000.0, 2)
+        self.raspberry_pi_score = round(self.raspberry_pi_score, 2)
+        self.jetson_nano_score = round(self.jetson_nano_score, 2)
+        self.desktop_pc_score = round(self.desktop_pc_score, 2)
+        self.aws_server_score = round(self.aws_server_score, 2)
 
         # Return already-rounded scores and the rounded latency
         return {

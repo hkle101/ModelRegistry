@@ -1,0 +1,73 @@
+openapi: 3.0.2
+info:
+  title: ECE 461 - Fall 2025 - Project Phase 2 (BASELINE endpoint: /artifact/byRegEx POST)
+  version: 3.4.2
+  description: |
+    Single-endpoint extract for POST /artifact/byRegEx
+paths:
+  /artifact/byRegEx:
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArtifactRegEx"
+            examples:
+              ExampleRegEx:
+                value:
+                  regex: .*?(audience|bert).*
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArtifactMetadata"
+              examples:
+                ExampleResponse:
+                  value:
+                    - name: audience-classifier
+                      id: 3847247294
+                      type: model
+                    - name: openai-whisper
+                      id: 7364518290
+                      type: code
+                    - name: bert-base-uncased
+                      id: 9078563412
+                      type: model
+          description: Return a list of artifacts.
+        "400":
+          description: There is missing field(s) in the artifact_regex or it is formed improperly, or is invalid
+        "403":
+          description: Authentication failed due to invalid or missing AuthenticationToken.
+        "404":
+          description: No artifact found under this regex.
+      operationId: ArtifactByRegExGet
+      summary: Get any artifacts fitting the regular expression (BASELINE).
+      description: |
+        Search for an artifact using regular expression over artifact names and READMEs. This is similar to search by name.
+    parameters:
+      - name: X-Authorization
+        description: ""
+        schema:
+          $ref: "#/components/schemas/AuthenticationToken"
+        in: header
+        required: true
+components:
+  schemas:
+    AuthenticationToken:
+      type: string
+    ArtifactMetadata:
+      type: object
+      properties:
+        name: { type: string }
+        id: { type: string }
+        type: { type: string }
+    ArtifactRegEx:
+      type: object
+      required: [regex]
+      properties:
+        regex:
+          type: string

@@ -1,0 +1,32 @@
+openapi: 3.0.2
+info:
+  title: ECE 461 - Fall 2025 - Project Phase 2 (BASELINE endpoint: /reset)
+  version: 3.4.2
+  description: |
+    Single-endpoint extract for /reset from baseline_endpoints.yaml
+paths:
+  /reset:
+    delete:
+      responses:
+        "200":
+          description: Registry is reset.
+        "401":
+          description: You do not have permission to reset the registry.
+        "403":
+          description: Authentication failed due to invalid or missing AuthenticationToken.
+      operationId: RegistryReset
+      summary: Reset the registry. (BASELINE)
+      description: Reset the registry to a system default state.
+    parameters:
+      - name: X-Authorization
+        description: ""
+        schema:
+          $ref: "#/components/schemas/AuthenticationToken"
+        in: header
+        required: true
+components:
+  schemas:
+    AuthenticationToken:
+      description: |
+        The spec permits you to use any token format you like. You could, for example, look into JSON Web Tokens ("JWT", pronounced "jots"): https://jwt.io.
+      type: string

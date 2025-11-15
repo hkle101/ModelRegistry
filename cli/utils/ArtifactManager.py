@@ -44,7 +44,7 @@ class ArtifactManager:
         scores = self.scoreArtifact(artifact_data)
 
         artifact_data.update({
-            "id": artifact_id,
+            "artifact_id": artifact_id,
             "name": name,
             "scores": scores
         })
