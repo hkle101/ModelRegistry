@@ -18,11 +18,11 @@ class PerformanceClaimsMetric(BaseMetric):
         super().__init__()
 
     def calculate_metric(self, data: Dict[str, Any]):
-        category = data.get("category", "UNKNOWN")
-        if category != "MODEL":
-            # Not a model entry -> no performance claims
-            self.score = 0.0
-            return
+        # category = data.get("category", "UNKNOWN")
+        # if category != "MODEL":
+        # Not a model entry -> no performance claims
+        # self.score = 0.0
+        # return
 
         score = 0.0
 

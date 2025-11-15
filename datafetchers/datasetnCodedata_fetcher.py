@@ -1,4 +1,4 @@
-import logging
+# import logging
 from typing import Any, Dict
 
 from .basemetricdata_fetcher import BaseDataFetcher
@@ -41,7 +41,7 @@ class DatasetAndCodeDataFetcher(BaseDataFetcher):
                         for s in splits
                         if isinstance(s, dict)
                     )
-                    logging.debug(f"Example count (dict splits) = {total}")
+                    # logging.debug(f"Example count (dict splits) = {total}")
                     return total
                 elif isinstance(ds_info, list):
                     total = 0
@@ -53,7 +53,7 @@ class DatasetAndCodeDataFetcher(BaseDataFetcher):
                                 for s in splits
                                 if isinstance(s, dict)
                             )
-                    logging.debug(f"Example count (list splits) = {total}")
+                    # logging.debug(f"Example count (list splits) = {total}")
                     return total
             except Exception:
                 return 0
@@ -80,7 +80,7 @@ class DatasetAndCodeDataFetcher(BaseDataFetcher):
             if license_tags:
                 tag_vals = ", ".join(t.split(":", 1)[1].strip() for t in license_tags)
                 combined = f"{lic}, {tag_vals}" if lic else tag_vals
-                logging.debug(f"License detected: {combined}")
+                # logging.debug(f"License detected: {combined}")
                 return combined
 
         return str(lic or "").strip()
@@ -107,11 +107,11 @@ class DatasetAndCodeDataFetcher(BaseDataFetcher):
                 continue
             for ind in ml_indicators:
                 if ind in t:
-                    logging.debug("ML integration detected from tags")
+                    # logging.debug("ML integration detected from tags")
                     return True
 
         if parsed.get("pipeline_tag") or parsed.get("transformersInfo"):
-            logging.debug("ML integration detected from pipeline_tag/transformersInfo")
+            # logging.debug("ML integration detected from pipeline_tag/transformersInfo")
             return True
 
         return False
@@ -155,7 +155,7 @@ class DatasetAndCodeDataFetcher(BaseDataFetcher):
                 fname = str(s.get("rfilename", "")).upper()
                 for d in doc_files:
                     if d.upper() in fname:
-                        logging.debug("Documentation file detected")
+                        # logging.debug("Documentation file detected")
                         return True
 
         # If description is long enough and no explicit docs found, assume ok
@@ -176,7 +176,7 @@ class DatasetAndCodeDataFetcher(BaseDataFetcher):
             or {}
         )
         if isinstance(transformers_info, dict) and transformers_info.get("auto_model"):
-            logging.debug("Code example detected from transformersInfo")
+            # logging.debug("Code example detected from transformersInfo")
             return True
 
         example_indicators = ["example", "demo", "tutorial", ".py", ".ipynb"]
@@ -187,7 +187,7 @@ class DatasetAndCodeDataFetcher(BaseDataFetcher):
             if isinstance(s, dict):
                 fname = str(s.get("rfilename", "")).lower()
                 if any(ind in fname for ind in example_indicators):
-                    logging.debug(f"Code example detected from filename: {fname}")
+                    # logging.debug(f"Code example detected from filename: {fname}")
                     return True
 
         return False
@@ -231,9 +231,9 @@ class DatasetAndCodeDataFetcher(BaseDataFetcher):
             }
         )
 
-        logging.info(
-            f"DatasetAndCodeDataFetcher collected data for category={category}"
-        )
+        # logging.info(
+        #    f"DatasetAndCodeDataFetcher collected data for category={category}"
+        # )
         return self.metadata
 
     # Keep BaseDataFetcher contract: implement Model/Dataset/Code variants

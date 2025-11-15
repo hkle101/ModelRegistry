@@ -1,6 +1,7 @@
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
-import logging
+
+# import logging
 
 
 class DatasetDataFetcher(BaseDataFetcher):
@@ -94,7 +95,7 @@ class DatasetDataFetcher(BaseDataFetcher):
             }
         )
 
-        logging.debug(f"DatasetDataFetcher collected keys={list(self.metadata.keys())}")
+        # logging.debug(f"DatasetDataFetcher collected keys={list(self.metadata.keys())}")
         return self.metadata
 
     # Implement BaseDataFetcher contract & provide aliases
