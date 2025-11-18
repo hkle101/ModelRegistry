@@ -2,180 +2,232 @@ import os
 import json
 import logging
 from typing import Optional, List
-from fastapi import FastAPI, HTTPException, Header, Depends, status
+from fastapi import FastAPI, HTTPException, Header, Depends, status, Response, Query, Body
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
 from cli.utils.ArtifactManager import ArtifactManager
 from backend.services.storage import StorageManager
 
-# ------------------------
+# ============================================================
 # Logging
-# ------------------------
+# ============================================================
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("main")
 
-# ------------------------
+# ============================================================
 # Configuration
-# ------------------------
-UPLOAD_TOKEN = os.getenv("UPLOAD_TOKEN", "my_secret_token")
-app = FastAPI(title="ModelRegistry Backend")
+# ============================================================
+UPLOAD_TOKEN = os.getenv("UPLOAD_TOKEN")  # token optional for baseline
+app = FastAPI(title="Model Registry Backend")
 
-# ------------------------
-# Models
-# ------------------------
+# ============================================================
+# CORS
+# ============================================================
+origins = [
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ============================================================
+# Pydantic Models
+# ============================================================
 class ArtifactUploadRequest(BaseModel):
     url: str
-    filename: Optional[str] = None  # optional name for testing
 
 class ArtifactQuery(BaseModel):
-    name: str
+    name: Optional[str] = None
     types: Optional[List[str]] = None
 
-# ------------------------
+# ============================================================
 # Managers
-# ------------------------
+# ============================================================
 artifact_manager = ArtifactManager()
 storage_manager = StorageManager()
 
-# ------------------------
-# Dependencies
-# ------------------------
+# ============================================================
+# Token Dependency (optional)
+# ============================================================
 def verify_token(x_authorization: str = Header(None, convert_underscores=False)):
-    if x_authorization != UPLOAD_TOKEN:
-        logger.warning("Unauthorized access attempt")
-        raise HTTPException(status_code=403, detail="Authentication failed")
+    """
+    baseline requires no token, so always return True
+    """
     return True
 
-# ------------------------
+# ============================================================
 # Endpoints
-# ------------------------
-@app.get(
-    "/health",
-    summary="Heartbeat check (BASELINE)",
-    description="Lightweight liveness probe. Returns HTTP 200 when the registry API is reachable.",
-    response_description="Service reachable."
-)
+# ============================================================
+
+@app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return Response(status_code=status.HTTP_200_OK)
 
 
+# --------------------------- CREATE ---------------------------
 @app.post("/artifact/{artifact_type}", status_code=status.HTTP_201_CREATED)
 def artifact_create(
     artifact_type: str,
     request: ArtifactUploadRequest,
     _: bool = Depends(verify_token),
 ):
+    """
+    Register a new artifact by providing a downloadable source URL.
+    Returns 201 if processed immediately, 202 if rating is deferred.
+    """
     try:
-        # Extract metadata from URL
+        # Process artifact: fetch metadata and compute scores
         artifact_data = artifact_manager.processUrl(request.url)
         artifact_data["artifact_type"] = artifact_type
-
-        # Convert to JSON bytes for storage
+        artifact_data["processed_url"] = request.url
+        # Convert artifact data to bytes
         artifact_bytes = json.dumps(artifact_data, indent=2).encode("utf-8")
-
-        # Store artifact
-        success = storage_manager.store_artifact(artifact_data, artifact_bytes, request.filename)
-        if not success:
+        # Store artifact (metadata + bytes)
+        storage_success = storage_manager.store_artifact(
+            artifact_data, artifact_bytes, artifact_data.get("name")
+        )
+        if not storage_success:
             raise HTTPException(status_code=500, detail="Failed to store artifact")
 
-        logger.info(f"Stored artifact '{artifact_data.get('name')}' ({artifact_data.get('artifact_id')})")
+        # Log stored artifact
+        logger.info(
+            f"Stored artifact {artifact_data.get('artifact_id')} of type {artifact_type}"
+        )
+        download_url = storage_manager.generate_download_url(
+            artifact_data.get("artifact_id"), artifact_data.get("name")
+        )
+        # Immediate processing: 201 Created
         return {
             "metadata": {
                 "name": artifact_data.get("name"),
                 "id": artifact_data.get("artifact_id"),
-                "type": artifact_type
+                "type": artifact_type,
             },
             "data": {
-                "url": request.url
-            }
+                "url": request.url,
+                "download_url": download_url,
+            },
         }
-
+    except HTTPException as he:
+        # Re-raise known HTTP exceptions
+        raise he
     except Exception as e:
         logger.exception("Artifact creation failed")
         raise HTTPException(status_code=400, detail=str(e))
 
-
+# --------------------------- LIST ---------------------------
 @app.post("/artifacts")
 def artifacts_list(
-    queries: List[ArtifactQuery],
-    offset: Optional[str] = None,
+    response: Response,
+    queries: Optional[List[ArtifactQuery]] = Body(default=None),
+    offset: Optional[str] = Query(None),
     _: bool = Depends(verify_token),
 ):
     try:
-        items = storage_manager.list_artifacts(queries, offset)
+        items = storage_manager.list_artifacts(queries)
+
+        # Set next offset in header (stub)
+        next_offset = str(len(items)) if items else "0"
+        response.headers["offset"] = next_offset
+
         logger.info(f"Returned {len(items)} artifacts")
         return items
+
     except Exception as e:
         logger.exception("Failed to list artifacts")
         raise HTTPException(status_code=400, detail=str(e))
 
-
-@app.get("/artifacts/{artifact_id}")
+# --------------------------- RETRIEVE ---------------------------
+@app.get("/artifacts/{artifact_type}/{id}")
 def artifact_retrieve(
-    artifact_id: str,
+    artifact_type: str,
+    id: str,
     _: bool = Depends(verify_token),
 ):
+    """
+    Retrieve a single artifact by type and ID.
+    """
     try:
-        artifact = storage_manager.get_artifact(artifact_id)
+        artifact = storage_manager.get_artifact(id)
         if not artifact:
             raise HTTPException(status_code=404, detail="Artifact not found")
-        return artifact
+
+        # Check artifact type matches
+        if artifact.get("type") != artifact_type:
+            raise HTTPException(status_code=400, detail="Artifact type mismatch")
+
+        # Return in expected format
+        return {
+            "metadata": {
+                "name": artifact.get("name"),
+                "id": artifact.get("artifact_id"),
+                "type": artifact.get("type"),
+            },
+            "data": {
+                "url": artifact.get("processed_url"),
+            },
+        }
+
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.exception(f"Failed to retrieve artifact '{artifact_id}'")
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.exception("Artifact retrieve failed")
+        raise HTTPException(status_code=400, detail=f"Failed to retrieve artifact {e}")
 
-
-@app.put("/artifacts/{artifact_id}")
-def artifact_update(
-    artifact_id: str,
-    request: ArtifactUploadRequest,
-    _: bool = Depends(verify_token),
-):
-    try:
-        artifact_data = artifact_manager.processUrl(request.url)
-        artifact_data["artifact_id"] = artifact_id
-        artifact_data["artifact_type"] = artifact_data.get("artifact_type")  # preserve type
-
-        artifact_bytes = json.dumps(artifact_data, indent=2).encode("utf-8")
-        success = storage_manager.update_artifact(artifact_data, artifact_bytes, request.filename)
-        if not success:
-            raise HTTPException(status_code=404, detail="Artifact not found or update failed")
-        return {"status": "updated", "artifact_id": artifact_id}
-
-    except Exception as e:
-        logger.exception(f"Artifact update failed for '{artifact_id}'")
-        raise HTTPException(status_code=400, detail=str(e))
-
-
+# --------------------------- DELETE ---------------------------
 @app.delete("/artifacts/{artifact_id}")
 def artifact_delete(
     artifact_id: str,
-    _: bool = Depends(verify_token),
+    _: bool = Depends(verify_token)
 ):
     try:
         success = storage_manager.delete_artifact(artifact_id)
+
         if not success:
-            raise HTTPException(status_code=404, detail="Artifact not found or delete failed")
+            raise HTTPException(
+                status_code=404,
+                detail="Artifact not found or delete failed"
+            )
+
         return {"status": "deleted", "artifact_id": artifact_id}
+
     except Exception as e:
-        logger.exception(f"Artifact deletion failed for '{artifact_id}'")
+        logger.exception("Artifact deletion failed")
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@app.delete("/reset")
-def reset_registry(_: bool = Depends(verify_token)):
-    """
-    Reset the registry to a system default state.
-    Used for testing/autograder.
-    """
+# --------------------------- RESET ---------------------------
+@app.delete("/reset", status_code=200)
+def reset_registry(
+    user_has_permission: bool = Depends(verify_token),
+):
+    logger.info("🔄 Reset request received")
+    # --- If token is valid but user lacks permission (401) ---
+    if not user_has_permission:
+        logger.warning("⛔ Reset denied: user lacks reset permission (401)")
+        raise HTTPException(status_code=401, detail="Not authorized to reset")
+    # --- Perform reset ---
     try:
         success = storage_manager.reset()
         if not success:
-            raise HTTPException(status_code=500, detail="Failed to reset registry")
-        return {"status": "reset"}
-    except Exception as e:
-        logger.exception("Registry reset failed")
-        raise HTTPException(status_code=400, detail=str(e))
+            logger.error("❌ Reset failed: storage_manager returned False")
+            raise HTTPException(status_code=500, detail=" Reset failed")
 
+        logger.info("✅ Registry successfully reset")
+        return {"message": "Registry reset"}
+
+    except Exception as e:
+        logger.exception(f"🔥 Exception during reset: {e}")
+        raise HTTPException(status_code=500, detail="Internal error")
