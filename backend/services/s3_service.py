@@ -55,6 +55,21 @@ class S3Service:
             logger.exception(f"❌ Failed to download artifact '{s3_key}': {e}")
             raise
 
+    def generate_presigned_url(self, key: str, expires_in: int = 3600) -> str:
+        """
+        Generate a presigned URL for downloading an artifact from S3.
+        """
+        try:
+            url = self.s3.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": self.bucket_name, "Key": key},
+                ExpiresIn=expires_in,
+            )
+            return url
+        except Exception as e:
+            logger.exception(f"❌ Failed to generate presigned URL for {key}: {e}")
+            raise
+
     def delete_artifact(self, s3_key: str) -> bool:
         """
         Delete a single artifact from S3.
@@ -67,22 +82,6 @@ class S3Service:
         except Exception as e:
             logger.exception(f"❌ Failed to delete artifact '{s3_key}': {e}")
             return False
-
-    def update_artifact(self, artifact_bytes: bytes, artifact_id: str, filename: str) -> str:
-        """
-        Update an existing artifact by re-uploading from bytes.
-        Overwrites the previous artifact.
-        """
-        key = f"artifacts/{artifact_id}/{filename}"
-        try:
-            file_obj = BytesIO(artifact_bytes)
-            self.s3.upload_fileobj(file_obj, self.bucket_name, key)
-            uri = self._s3_uri(key)
-            logger.info(f"✏️ Updated artifact '{filename}' → {uri}")
-            return uri
-        except Exception as e:
-            logger.exception(f"❌ Failed to update artifact '{filename}' for artifact_id={artifact_id}: {e}")
-            raise
 
     def reset_bucket(self) -> None:
         """
@@ -99,5 +98,3 @@ class S3Service:
         except Exception as e:
             logger.exception(f"❌ Failed to reset S3 bucket '{self.bucket_name}': {e}")
             raise
-
-

@@ -1,12 +1,11 @@
 import logging
 import requests
-import json
+from typing import Optional, Any, Dict, List
 from datetime import datetime
 from backend.services.s3_service import S3Service
+from aws.config import BUCKET_NAME
 from backend.services.dynamodb_service import DynamoDBService
 from cli.utils.ArtifactManager import ArtifactManager
-from decimal import Decimal
-from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +17,7 @@ class StorageManager:
         self.s3 = S3Service()
         self.db = DynamoDBService()
         self.artifact_manager = ArtifactManager()
+        self.bucket_name = BUCKET_NAME
 
     # ------------------------
     # Artifact Operations
@@ -27,7 +27,7 @@ class StorageManager:
             artifact_id = artifact_data.get("artifact_id")
             if not artifact_id:
                 raise ValueError("artifact_data must contain 'artifact_id'")
-
+            filename = artifact_data.get('name') if not filename else filename
             # Upload artifact to S3
             s3_uri = self.s3.upload_artifact(artifact_bytes, artifact_id, filename)
 
@@ -39,11 +39,12 @@ class StorageManager:
                 "type": artifact_data.get("artifact_type"),
                 "license": artifact_data.get("license"),
                 "size_mb": artifact_data.get("size_mb"),
-                "scores": self._convert_floats_to_decimal(artifact_data.get("scores", {})),
+                "scores": (artifact_data.get("scores", {})),
                 "related_artifacts": artifact_data.get("related_artifacts", {}),
                 "metadata": artifact_data.get("metadata", {}),
                 "created_at": now,
                 "updated_at": now,
+                "processed_url": artifact_data.get("processed_url", ""),
                 "url": s3_uri,
             }
 
@@ -52,6 +53,16 @@ class StorageManager:
 
         except Exception:
             logger.exception(f"❌ Failed to create metadata for artifact '{artifact_data.get('name')}'")
+            raise
+
+    def generate_download_url(self, artifact_id: str, filename: str, expires_in: int = 3600) -> str:
+        key = f"artifacts/{artifact_id}/{filename}"
+        try:
+            url = self.s3.generate_presigned_url(key, expires_in)
+            logger.info(f"Generated presigned URL for artifact_id={artifact_id}")
+            return url
+        except Exception as e:
+            logger.exception(f"Failed to generate presigned URL for {key}: {e}")
             raise
 
     def store_artifact(self, artifact_data: Dict[str, Any], artifact_bytes: bytes, filename: str) -> bool:
@@ -109,49 +120,93 @@ class StorageManager:
             logger.exception(f"❌ Exception deleting artifact with artifact_id={artifact_id}")
             return False
 
-    def update_artifact(self, artifact_data: Dict[str, Any], artifact_bytes: bytes, filename: str) -> bool:
+    def list_artifacts(self, queries=None, offset: Optional[int] = 0, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Returns a paginated list of artifacts, optionally filtered by queries.
+        - queries: list of ArtifactQuery dicts or objects
+        - offset: number of artifacts to skip (pagination)
+        - limit: number of artifacts to return
+        """
         try:
-            artifact_id = artifact_data.get("artifact_id")
-            if not artifact_id:
-                raise ValueError("artifact_data must contain 'artifact_id'")
+            all_items = self.db.scan_all()
 
-            existing_item = self.db.get_item(artifact_id)
-            if not existing_item:
-                logger.error(f"❌ Cannot update. No artifact found with artifact_id={artifact_id}")
-                return False
+            # ------------------------
+            # Filter artifacts if queries provided
+            # ------------------------
+            if queries:
+                normalized = []
+                for query in queries:
+                    # Extract query fields
+                    if isinstance(query, dict):
+                        q_name = query.get("name")
+                        q_types = query.get("types")
+                    else:
+                        q_name = getattr(query, "name", None)
+                        q_types = getattr(query, "types", None)
 
-            # Overwrite artifact in S3
-            s3_uri = self.s3.upload_artifact(artifact_bytes, artifact_id, filename)
+                    # Wildcard: return all items immediately
+                    if q_name == "*":
+                        break
 
-            # Update metadata in DynamoDB
-            update_data = {
-                "name": artifact_data.get("name"),
-                "type": artifact_data.get("artifact_type"),
-                "license": artifact_data.get("license"),
-                "size_mb": artifact_data.get("size_mb"),
-                "scores": self._convert_floats_to_decimal(artifact_data.get("scores", {})),
-                "related_artifacts": artifact_data.get("related_artifacts", {}),
-                "metadata": artifact_data.get("metadata", {}),
-                "updated_at": datetime.now().isoformat() + "Z",
-                "url": s3_uri,
-            }
+                    # Clean name and types
+                    has_name = bool(q_name and q_name.strip() and q_name.strip().lower() != "string")
+                    clean_types = [t.strip().lower() for t in (q_types or []) if t and t.strip().lower() != "string"]
+                    has_types = bool(clean_types)
 
-            success = self.db.update_item(artifact_id, update_data)
-            if success:
-                logger.info(f"✏️ Updated artifact '{artifact_data.get('name')}' ({artifact_id})")
-            else:
-                logger.error(f"❌ Failed to update artifact '{artifact_data.get('name')}' ({artifact_id})")
-            return success
+                    if has_name or has_types:
+                        normalized.append({
+                            "name": q_name.strip().lower() if has_name else None,
+                            "types": clean_types,
+                        })
 
-        except Exception:
-            logger.exception(f"❌ Exception updating artifact '{artifact_data.get('name')}'")
-            return False
+                # Apply filtering only if we have meaningful constraints
+                if normalized:
+                    filtered = []
+                    for nq in normalized:
+                        q_name = nq["name"]
+                        q_types = nq["types"]
 
-    def list_artifacts(self) -> list:
-        try:
-            artifacts = self.db.scan_all()
-            logger.info(f"📄 Retrieved list of {len(artifacts)} artifacts")
-            return artifacts
+                        for item in all_items:
+                            item_name = (item.get("name") or "").lower()
+                            item_type = (item.get("type") or item.get("artifact_type") or "").lower()
+
+                            if q_name and q_name not in item_name:
+                                continue
+                            if q_types and item_type not in q_types:
+                                continue
+                            filtered.append(item)
+
+                    # De-duplicate
+                    seen = set()
+                    deduped = []
+                    for it in filtered:
+                        aid = it.get("artifact_id") or it.get("id")
+                        key = aid or (it.get("name"), it.get("type"))
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        deduped.append(it)
+
+                    all_items = deduped
+
+            # ------------------------
+            # Apply pagination using offset & limit
+            # ------------------------
+            offset = offset or 0
+            paginated = all_items[offset:offset + limit]
+
+            # ------------------------
+            # Return only metadata fields as per API spec
+            # ------------------------
+            results = [{
+                "name": item.get("name"),
+                "id": item.get("artifact_id"),
+                "type": item.get("type") or item.get("artifact_type")
+            } for item in paginated]
+
+            logger.info(f"📄 Retrieved list of {len(results)} artifacts (offset={offset}, limit={limit})")
+            return results
+
         except Exception:
             logger.exception("❌ Exception listing artifacts")
             return []
@@ -164,7 +219,9 @@ class StorageManager:
             logger.info(f"⬇️ Fetched artifact bytes from URL: {url}")
             return artifact_bytes
         except requests.RequestException:
-            logger.exception(f"❌ Failed to fetch artifact bytes from URL: {url}")
+            logger.exception(
+                f"❌ Failed to fetch artifact bytes from URL: {url}"
+            )
             return None
 
     def reset(self) -> bool:
@@ -178,100 +235,3 @@ class StorageManager:
         except Exception as e:
             logger.exception(f"❌ Failed to reset storage: {e}")
             return False
-
-    # ------------------------
-    # Helpers
-    # ------------------------
-    @staticmethod
-    def _convert_floats_to_decimal(obj: Any) -> Any:
-        if isinstance(obj, dict):
-            return {k: StorageManager._convert_floats_to_decimal(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [StorageManager._convert_floats_to_decimal(v) for v in obj]
-        elif isinstance(obj, float):
-            return Decimal(str(obj))
-        else:
-            return obj
-
-    # ------------------------
-    # Command-line Interface
-    # ------------------------
-    def main(self):
-        menu = """
-StorageManager CLI:
-1. List Artifacts
-2. Get Artifact by ID
-3. Upload Artifact from URL
-4. Update Artifact by ID
-5. Delete Artifact by ID
-6. Reset Storage
-7. Exit
-"""
-
-        while True:
-            print(menu)
-            choice = input("Enter your choice (1-7): ").strip()
-
-            if choice == "1":
-                artifacts = self.list_artifacts()
-                print(json.dumps(artifacts, indent=2))
-
-            elif choice == "2":
-                artifact_id = input("Enter artifact ID: ").strip()
-                artifact = self.get_artifact(artifact_id)
-                if artifact:
-                    print(json.dumps(artifact, indent=2))
-                else:
-                    print("❌ Not found")
-
-            elif choice == "3":
-                url = input("Enter artifact URL: ").strip()
-                artifact_data = self.artifact_manager.processUrl(url)
-                artifact_bytes = json.dumps({
-                    "artifact_id": artifact_data["artifact_id"],
-                    "name": artifact_data.get("name", "unnamed"),
-                    "dummy_score": 42
-                }, indent=2).encode("utf-8")
-                filename = artifact_data.get("name", artifact_data["artifact_id"])
-                success = self.store_artifact(artifact_data, artifact_bytes, filename)
-                print("✅ Uploaded" if success else "❌ Upload failed")
-
-            elif choice == "4":
-                artifact_id = input("Enter artifact ID to update: ").strip()
-                url = input("Enter new artifact URL: ").strip()
-                artifact_data = self.artifact_manager.processUrl(url)
-                artifact_data["artifact_id"] = artifact_id
-                artifact_bytes = json.dumps({
-                    "artifact_id": artifact_id,
-                    "name": artifact_data.get("name", "unnamed"),
-                    "dummy_score": 42
-                }, indent=2).encode("utf-8")
-                filename = artifact_data.get("name", artifact_id)
-                success = self.update_artifact(artifact_data, artifact_bytes, filename)
-                print("✅ Updated" if success else "❌ Update failed")
-
-            elif choice == "5":
-                artifact_id = input("Enter artifact ID to delete: ").strip()
-                success = self.delete_artifact(artifact_id)
-                print("✅ Deleted" if success else "❌ Delete failed")
-
-            elif choice == "6":
-                confirm = input("Are you sure you want to reset storage? (yes/no): ").strip().lower()
-                if confirm == "yes":
-                    success = self.reset()
-                    print("✅ Storage reset" if success else "❌ Reset failed")
-
-            elif choice == "7":
-                print("Exiting CLI.")
-                break
-
-            else:
-                print("Invalid choice. Please enter a number from 1-7.")
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    manager = StorageManager()
-    manager.main()
-
-

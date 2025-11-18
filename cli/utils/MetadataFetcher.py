@@ -111,4 +111,3 @@ if __name__ == "__main__":
     print("\n=== MetadataFetcher Result ===")
     print("artifact_type:", result.get("artifact_type"))
     print("raw_metadata:", result)
-

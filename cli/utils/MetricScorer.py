@@ -166,6 +166,5 @@ class MetricScorer:
         else:
             print("\nAll scores are strings. Ready for DynamoDB upload.")
 
-
 if __name__ == "__main__":
     MetricScorer.main()

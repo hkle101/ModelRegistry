@@ -1,157 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Model Registry Frontend</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        input, select, button, textarea { margin: 5px 0; padding: 5px; width: 100%; }
-        textarea { height: 80px; }
-        section { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
-        h2 { margin-top: 0; }
-        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
-    </style>
+<meta charset="UTF-8">
+<title>Model Registry Frontend</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    input, button, textarea { margin: 5px 0; padding: 5px; width: 100%; }
+    textarea { height: 80px; }
+    section { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
+    h2 { margin-top: 0; }
+    pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
+</style>
 </head>
 <body>
-    <h1>Model Registry Frontend</h1>
 
-    <label>X-Authorization Token:</label>
-    <input type="text" id="authToken" placeholder="Enter X-Authorization token" />
+<h1>Model Registry Frontend</h1>
 
-    <!-- Create Artifact -->
-    <section>
-        <h2>Create Artifact</h2>
-        <label>Artifact Type:</label>
-        <input type="text" id="createType" placeholder="model/dataset/code" />
-        <label>Artifact URL:</label>
-        <input type="text" id="createUrl" placeholder="https://huggingface.co/..." />
-        <button onclick="createArtifact()">Create Artifact</button>
-        <pre id="createResult"></pre>
-    </section>
+<label>X-Authorization Token:</label>
+<input type="text" id="authToken" placeholder="Enter X-Authorization token" />
 
-    <!-- Retrieve Artifact -->
-    <section>
-        <h2>Retrieve Artifact</h2>
-        <label>Artifact Type:</label>
-        <input type="text" id="getType" />
-        <label>Artifact ID:</label>
-        <input type="text" id="getId" />
-        <button onclick="getArtifact()">Retrieve</button>
-        <pre id="getResult"></pre>
-    </section>
+<script>
+const baseUrl = "http://localhost:8000";
 
-    <!-- Update Artifact -->
-    <section>
-        <h2>Update Artifact</h2>
-        <label>Artifact Type:</label>
-        <input type="text" id="updateType" />
-        <label>Artifact ID:</label>
-        <input type="text" id="updateId" />
-        <label>Metadata JSON:</label>
-        <textarea id="updateData">{ "name": "new-name", "data": { "url": "https://..." } }</textarea>
-        <button onclick="updateArtifact()">Update</button>
-        <pre id="updateResult"></pre>
-    </section>
+function getAuthHeader() {
+    const token = document.getElementById("authToken").value;
+    return token ? { "X-Authorization": token } : {};
+}
 
-    <!-- Delete Artifact -->
-    <section>
-        <h2>Delete Artifact</h2>
-        <label>Artifact Type:</label>
-        <input type="text" id="deleteType" />
-        <label>Artifact ID:</label>
-        <input type="text" id="deleteId" />
-        <button onclick="deleteArtifact()">Delete</button>
-        <pre id="deleteResult"></pre>
-    </section>
+async function safeJson(res) {
+    try { return JSON.stringify(await res.json(), null, 2); }
+    catch { return await res.text(); }
+}
+</script>
 
-    <!-- List Artifacts -->
-    <section>
-        <h2>List Artifacts</h2>
-        <label>Offset:</label>
-        <input type="number" id="listOffset" value="0" />
-        <button onclick="listArtifacts()">List</button>
-        <pre id="listResult"></pre>
-    </section>
+<!-- Create Artifact -->
+<section>
+<h2>Create Artifact</h2>
+<label>Artifact Type:</label>
+<input type="text" id="createType" placeholder="model/dataset/code" />
+<label>Artifact URL:</label>
+<input type="text" id="createUrl" placeholder="https://github.com/user/repo" />
+<button onclick="createArtifact()">Create Artifact</button>
+<pre id="createResult"></pre>
+</section>
 
-    <!-- Search by Regex -->
-    <section>
-        <h2>Search Artifacts by Regex</h2>
-        <label>Regex:</label>
-        <input type="text" id="regexQuery" placeholder=".*bert.*" />
-        <button onclick="searchArtifacts()">Search</button>
-        <pre id="regexResult"></pre>
-    </section>
+<script>
+async function createArtifact() {
+    const type = document.getElementById("createType").value;
+    const url = document.getElementById("createUrl").value;
 
-    <script>
-        const baseUrl = "http://localhost:8000";
+    const res = await fetch(`${baseUrl}/artifact/${type}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify({ url })
+    });
 
-        function getAuthHeader() {
-            const token = document.getElementById("authToken").value;
-            return { "X-Authorization": token };
-        }
+    document.getElementById("createResult").textContent = await safeJson(res);
+}
+</script>
 
-        async function createArtifact() {
-            const type = document.getElementById("createType").value;
-            const url = document.getElementById("createUrl").value;
-            const res = await fetch(`${baseUrl}/artifact/${type}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", ...getAuthHeader() },
-                body: JSON.stringify({ url })
-            });
-            document.getElementById("createResult").textContent = await res.json().then(JSON.stringify, e => res.text());
-        }
+<!-- Retrieve -->
+<section>
+<h2>Retrieve Artifact</h2>
+<input id="getId" placeholder="Artifact ID" />
+<button onclick="getArtifact()">Retrieve</button>
+<pre id="getResult"></pre>
+</section>
 
-        async function getArtifact() {
-            const type = document.getElementById("getType").value;
-            const id = document.getElementById("getId").value;
-            const res = await fetch(`${baseUrl}/artifacts/${type}/${id}`, {
-                headers: getAuthHeader()
-            });
-            document.getElementById("getResult").textContent = await res.json().then(JSON.stringify, e => res.text());
-        }
+<script>
+async function getArtifact() {
+    const id = document.getElementById("getId").value;
 
-        async function updateArtifact() {
-            const type = document.getElementById("updateType").value;
-            const id = document.getElementById("updateId").value;
-            const data = JSON.parse(document.getElementById("updateData").value);
-            const res = await fetch(`${baseUrl}/artifacts/${type}/${id}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json", ...getAuthHeader() },
-                body: JSON.stringify(data)
-            });
-            document.getElementById("updateResult").textContent = await res.json().then(JSON.stringify, e => res.text());
-        }
+    const res = await fetch(`${baseUrl}/artifacts/${id}`, {
+        headers: getAuthHeader()
+    });
 
-        async function deleteArtifact() {
-            const type = document.getElementById("deleteType").value;
-            const id = document.getElementById("deleteId").value;
-            const res = await fetch(`${baseUrl}/artifact/${type}/${id}`, {
-                method: "DELETE",
-                headers: getAuthHeader()
-            });
-            document.getElementById("deleteResult").textContent = await res.json().then(JSON.stringify, e => res.text());
-        }
+    document.getElementById("getResult").textContent = await safeJson(res);
+}
+</script>
 
-        async function listArtifacts() {
-            const offset = document.getElementById("listOffset").value;
-            const res = await fetch(`${baseUrl}/artifacts?offset=${offset}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", ...getAuthHeader() },
-                body: JSON.stringify([{}]) // send minimal ArtifactQuery array
-            });
-            document.getElementById("listResult").textContent = await res.json().then(JSON.stringify, e => res.text());
-        }
+<!-- Update -->
+<section>
+<h2>Update Artifact</h2>
+<input id="updateId" placeholder="Artifact ID" />
+<input id="updateUrl" placeholder="New Artifact URL" />
+<button onclick="updateArtifact()">Update</button>
+<pre id="updateResult"></pre>
+</section>
 
-        async function searchArtifacts() {
-            const regex = document.getElementById("regexQuery").value;
-            const res = await fetch(`${baseUrl}/artifact/byRegEx`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", ...getAuthHeader() },
-                body: JSON.stringify({ regex })
-            });
-            document.getElementById("regexResult").textContent = await res.json().then(JSON.stringify, e => res.text());
-        }
-    </script>
+<script>
+async function updateArtifact() {
+    const id = document.getElementById("updateId").value;
+    const url = document.getElementById("updateUrl").value;
+
+    const res = await fetch(`${baseUrl}/artifacts/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify({ url })
+    });
+
+    document.getElementById("updateResult").textContent = await safeJson(res);
+}
+</script>
+
+<!-- Delete -->
+<section>
+<h2>Delete Artifact</h2>
+<input id="deleteId" placeholder="Artifact ID" />
+<button onclick="deleteArtifact()">Delete</button>
+<pre id="deleteResult"></pre>
+</section>
+
+<script>
+async function deleteArtifact() {
+    const id = document.getElementById("deleteId").value;
+
+    const res = await fetch(`${baseUrl}/artifacts/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeader()
+    });
+
+    document.getElementById("deleteResult").textContent = await safeJson(res);
+}
+</script>
+
+<!-- List -->
+<section>
+<h2>List All Artifacts</h2>
+<button onclick="listArtifacts()">List</button>
+<pre id="listResult"></pre>
+</section>
+
+<script>
+async function listArtifacts() {
+    const query = [{ name: ".*" }]; // your backend expects List[ArtifactQuery]
+
+    const res = await fetch(`${baseUrl}/artifacts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify(query)
+    });
+
+    document.getElementById("listResult").textContent = await safeJson(res);
+}
+</script>
+
+<!-- Reset -->
+<section>
+<h2>Reset Registry</h2>
+<button onclick="resetRegistry()">Reset Registry</button>
+<pre id="resetResult"></pre>
+</section>
+
+<script>
+async function resetRegistry() {
+    const res = await fetch(`${baseUrl}/reset`, {
+        method: "DELETE",
+        headers: getAuthHeader()
+    });
+
+    document.getElementById("resetResult").textContent = await safeJson(res);
+}
+</script>
+
+<!-- Health -->
+<section>
+<h2>Health Check</h2>
+<button onclick="healthCheck()">Check Health</button>
+<pre id="healthResult"></pre>
+</section>
+
+<script>
+async function healthCheck() {
+    const res = await fetch(`${baseUrl}/health`);
+    document.getElementById("healthResult").textContent = await safeJson(res);
+}
+</script>
+
 </body>
 </html>
-
