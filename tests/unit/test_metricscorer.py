@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
+import json
 from cli.utils.MetricScorer import MetricScorer  # adjust if your path is different
 
 
@@ -70,8 +71,15 @@ def test_score_artifact(
     scorer = MetricScorer()
     data = {"dummy": "data"}
     results = scorer.score_artifact(data)
+    # MetricScorer returns a JSON string by default; parse if necessary
+    if isinstance(results, str):
+        results = json.loads(results)
 
-    # Check that individual scores exist
+    # results is now a JSON-like dict with 'metrics', 'net_score', 'net_latency'
+    assert "metrics" in results
+    metrics = results["metrics"]
+
+    # Check that individual scores exist (strings of quantized Decimals)
     for name in [
         "code_quality",
         "dataset_quality",
@@ -81,18 +89,18 @@ def test_score_artifact(
         "ramp_up_time",
         "performance_claims",
     ]:
-        assert results[name] == 0.8
-        assert results[f"{name}_latency"] == 50.0
+        assert metrics[name]["score"] == 0.8
+        assert metrics[name]["latency"] == 50.0
 
     # Check size_score device scores
-    assert results["raspberry_pi"] == 0.7
-    assert results["jetson_nano"] == 0.6
-    assert results["desktop_pc"] == 0.9
-    assert results["aws_server"] == 1.0
-    assert results["size_score_latency"] == 100.0
+    assert metrics["size_score"]["raspberry_pi"] == 0.7
+    assert metrics["size_score"]["jetson_nano"] == 0.6
+    assert metrics["size_score"]["desktop_pc"] == 0.9
+    assert metrics["size_score"]["aws_server"] == 1.0
+    # size_score latency may be provided under the nested structure
+    assert metrics["size_score"]["latency"] == 100.0
 
     # Check that net_score is calculated correctly (weighted sum)
-    # Weighted net_score = sum(weights * scores)
     expected_net_score = (
         0.8 * 0.15 * 6  # 6 regular metrics
         + (0.7 + 0.6 + 0.9 + 1.0) / 4 * 0.1  # size_score average * weight

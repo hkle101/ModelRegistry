@@ -5,6 +5,7 @@ import uuid
 
 from cli.utils.MetadataFetcher import MetadataFetcher
 from cli.utils.MetricScorer import MetricScorer
+import json
 from cli.utils.MetricDataFetcher import MetricDataFetcher
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,14 @@ class ArtifactManager:
     def scoreArtifact(self, artifact_data: Dict[str, Any]) -> Dict[str, Any]:
         """Score artifact using all metrics."""
         scores = self.scorer.score_artifact(artifact_data)
+        # backward-compatible: if scorer returns a JSON string, parse it
+        if isinstance(scores, str):
+            try:
+                scores = json.loads(scores)
+            except Exception:
+                # if parsing fails, return the raw string to avoid hiding errors
+                return {"raw_scores": scores}
+
         return scores
 
     def processUrl(self, url: str) -> Dict[str, Any]:
@@ -43,11 +52,9 @@ class ArtifactManager:
         artifact_data = self.getArtifactData(url)
         scores = self.scoreArtifact(artifact_data)
 
-        artifact_data.update({
-            "artifact_id": artifact_id,
-            "name": name,
-            "scores": scores
-        })
+        artifact_data.update(
+            {"artifact_id": artifact_id, "name": name, "scores": scores}
+        )
 
         logger.info(f"Processed artifact {name} ({artifact_id}) from URL: {url}")
         return artifact_data
