@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 import json
+import os
 from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
@@ -23,7 +24,6 @@ from backend.api.update import router as update_router
 from backend.api.cost import router as cost_router
 from backend.api.byregex import router as byregex_router
 
-
 # ============================================================
 # Logging configuration
 # ============================================================
@@ -33,29 +33,37 @@ logging.basicConfig(
 )
 logger = logging.getLogger("main")
 
+# ============================================================
+# File logger for request bodies
+# ============================================================
+log_file_path = os.path.join(os.path.dirname(__file__), "request_body.log")
+file_handler = logging.FileHandler(log_file_path)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
+logger.addHandler(file_handler)
 
 # ============================================================
 # JSON Body Logging Middleware
 # ============================================================
 class LogRequestBodyMiddleware(BaseHTTPMiddleware):
     """
-    Logs JSON request bodies without consuming them.
+    Logs endpoint and JSON request bodies to both console and file.
     """
 
     async def dispatch(self, request: Request, call_next):
         body = await request.body()
+        log_entry = f"Incoming {request.method} {request.url.path}"
 
         if body:
             try:
-                logger.info(
-                    f"Incoming {request.method} {request.url.path} Body: {body.decode()}"
-                )
+                log_entry += f" Body: {body.decode()}"
             except Exception:
-                logger.info(
-                    f"Incoming {request.method} {request.url.path} (non-UTF8 body)"
-                )
+                log_entry += " (non-UTF8 body)"
 
-        # Re-attach body so FastAPI can read it again downstream
+        # Write log entry to both console and file
+        logger.info(log_entry)
+
+        # Re-attach the body so downstream endpoints can read it
         async def receive():
             return {"type": "http.request", "body": body}
 
@@ -63,14 +71,9 @@ class LogRequestBodyMiddleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
-
-"""
-Main FastAPI application for the Model Registry.
-
-Shared managers are imported from `backend.deps` to avoid circular imports.
-Routers are registered here to expose all endpoint groups.
-"""
-
+# ============================================================
+# FastAPI application setup
+# ============================================================
 artifact_manager = _artifact_manager
 storage_manager = _storage_manager
 verify_token = _verify_token
