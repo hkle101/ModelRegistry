@@ -3,9 +3,14 @@ import re
 import logging
 import uuid
 
-from cli.utils.MetadataFetcher import MetadataFetcher
-from cli.utils.MetricScorer import MetricScorer
-from cli.utils.MetricDataFetcher import MetricDataFetcher
+try:
+    from ModelRegistry.cli.utils.MetadataFetcher import MetadataFetcher
+    from ModelRegistry.cli.utils.MetricScorer import MetricScorer
+    from ModelRegistry.cli.utils.MetricDataFetcher import MetricDataFetcher
+except ModuleNotFoundError:  # fallback when running inside ModelRegistry
+    from cli.utils.MetadataFetcher import MetadataFetcher
+    from cli.utils.MetricScorer import MetricScorer
+    from cli.utils.MetricDataFetcher import MetricDataFetcher
 
 logger = logging.getLogger(__name__)
 

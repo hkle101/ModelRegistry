@@ -1,17 +1,31 @@
+import json
 from typing import Dict, Any
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from decimal import Decimal, ROUND_HALF_UP
-from metrics.codequality import CodeQualityMetric
-from metrics.datasetquality import DatasetQualityMetric
-from metrics.datasetandcodescore import DatasetAndCodeScoreMetric
-from metrics.busfactor import BusFactorMetric
-from metrics.license import LicenseMetric
-from metrics.rampuptime import RampUpTimeMetric
-from metrics.sizescore import SizeScoreMetric
-from metrics.performanceclaims import PerformanceClaimsMetric
-from cli.utils.MetadataFetcher import MetadataFetcher
-from cli.utils.MetricDataFetcher import MetricDataFetcher
+try:
+    from ModelRegistry.metrics.codequality import CodeQualityMetric
+    from ModelRegistry.metrics.datasetquality import DatasetQualityMetric
+    from ModelRegistry.metrics.datasetandcodescore import DatasetAndCodeScoreMetric
+    from ModelRegistry.metrics.busfactor import BusFactorMetric
+    from ModelRegistry.metrics.license import LicenseMetric
+    from ModelRegistry.metrics.rampuptime import RampUpTimeMetric
+    from ModelRegistry.metrics.sizescore import SizeScoreMetric
+    from ModelRegistry.metrics.performanceclaims import PerformanceClaimsMetric
+    from ModelRegistry.cli.utils.MetadataFetcher import MetadataFetcher
+    from ModelRegistry.cli.utils.MetricDataFetcher import MetricDataFetcher
+except ModuleNotFoundError:
+    from metrics.codequality import CodeQualityMetric
+    from metrics.datasetquality import DatasetQualityMetric
+    from metrics.datasetandcodescore import DatasetAndCodeScoreMetric
+    from metrics.busfactor import BusFactorMetric
+    from metrics.license import LicenseMetric
+    from metrics.rampuptime import RampUpTimeMetric
+    from metrics.sizescore import SizeScoreMetric
+    from metrics.performanceclaims import PerformanceClaimsMetric
+    from cli.utils.MetadataFetcher import MetadataFetcher
+    from cli.utils.MetricDataFetcher import MetricDataFetcher
+import json
 import time
 
 logger = logging.getLogger(__name__)
@@ -121,8 +135,11 @@ class MetricScorer:
         # --------------------------------------------------
         results = {k: str(v) for k, v in results.items()}
         # --------------------------------------------------
-
         return results
+
+    def ndjson_style_scores(self, scores: Dict[str, str]) -> json:
+        """Print scores in a readable format."""
+        return(json.dumps(scores, indent=4))
 
     @staticmethod
     def main():

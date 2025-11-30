@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Upload Artifact • Model Registry</title>
+	<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+	<div class="app">
+		<aside class="sidebar">
+			<h1>Model Registry</h1>
+			<nav>
+				<a href="index.html" data-link="index">Dashboard</a>
+				<a href="artifact.html" data-link="artifact">Artifact Detail</a>
+				<a href="upload.html" data-link="upload">Upload</a>
+			</nav>
+			<button class="small" id="themeToggle">Toggle Theme</button>
+		</aside>
+		<main>
+		<section class="fade-in card-set">
+			<div class="card" style="grid-column:1/-1;">
+				<h3>Create Artifact <span class="badge">POST</span></h3>
+				<div class="grid cols-2">
+					<div class="col">
+						<label>Type</label>
+						<input id="createType" placeholder="model" />
+					</div>
+					<div class="col">
+						<label>Source URL</label>
+						<input id="createUrl" placeholder="https://github.com/user/repo" />
+					</div>
+				</div>
+				<button onclick="doCreate()">Create</button>
+				<div class="timestamps" id="createTs"></div>
+				<pre id="createResult"></pre>
+			</div>
+			<div class="card">
+				<h3>Regex Search <span class="badge">POST</span></h3>
+				<input id="regexPattern" placeholder=".*pattern.*" />
+				<button onclick="doRegex()">Search</button>
+				<div class="timestamps" id="regexTs"></div>
+				<pre id="regexResult"></pre>
+			</div>
+			<div class="card">
+				<h3>List <span class="badge">POST</span></h3>
+				<textarea id="listQuery" placeholder='Queries JSON e.g. [{"name":".*"}]'></textarea>
+				<button onclick="doList()">List</button>
+				<div class="timestamps" id="listTs"></div>
+				<pre id="listResult"></pre>
+			</div>
+		</section>
+		</main>
+	</div>
+	<script src="scripts/api.js"></script>
+	<script>
+		const root = document.documentElement; let dark=false;
+		document.getElementById('themeToggle').addEventListener('click',()=>{
+			dark=!dark;
+			if(dark){
+				root.style.setProperty('--bg','#0f172a');
+				root.style.setProperty('--panel-bg','#1e293b');
+				root.style.setProperty('--border','#334155');
+				root.style.setProperty('--text','#e2e8f0');
+				root.style.setProperty('--muted','#94a3b8');
+			} else {
+				root.style.removeProperty('--bg');
+				root.style.removeProperty('--panel-bg');
+				root.style.removeProperty('--border');
+				root.style.removeProperty('--text');
+				root.style.removeProperty('--muted');
+			}
+		});
+		function show(el, tsEl, res){ el.textContent = res.pretty; tsEl.textContent = `req: ${res.requestTs||'-'} | res: ${res.responseTs||'-'} | status: ${res.status}`; }
+		async function doCreate(){
+			const type = document.getElementById('createType').value.trim();
+			const url = document.getElementById('createUrl').value.trim();
+			if(!type||!url) return;
+			const res = await apiCall('POST', `/artifact/${type}`, { url });
+			show(document.getElementById('createResult'), document.getElementById('createTs'), res);
+		}
+		async function doRegex(){
+			const pattern = document.getElementById('regexPattern').value.trim(); if(!pattern) return;
+			const res = await apiCall('POST', '/artifact/byRegEx', { regex: pattern });
+			show(document.getElementById('regexResult'), document.getElementById('regexTs'), res);
+		}
+		async function doList(){
+			let body = null; const raw = document.getElementById('listQuery').value.trim();
+			if(raw){ try { body = JSON.parse(raw); } catch { body = null; } }
+			const res = await apiCall('POST', '/artifacts', body);
+			show(document.getElementById('listResult'), document.getElementById('listTs'), res);
+		}
+		// Active nav highlight
+		const current='upload';
+		document.querySelectorAll('.sidebar nav a').forEach(a=>{ if(a.dataset.link===current) a.classList.add('active');});
+	</script>
+</body>
+</html>

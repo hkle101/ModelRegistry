@@ -67,6 +67,15 @@ class DynamoDBService:
             logger.error(f"❌ Failed to delete artifact (artifact_id={artifact_id}): {e}")
             return False
 
+        # ------------------------
+    # List / Scan
+    # ------------------------
+    def list_items(self) -> List[Dict[str, Any]]:
+        """
+        Return all items in the table. Alias for scan_all.
+        """
+        return self.scan_all()
+
     def scan_all(self) -> List[Dict[str, Any]]:
         try:
             response = self.table.scan()

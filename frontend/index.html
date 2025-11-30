@@ -1,181 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Model Registry Frontend</title>
-<style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    input, button, textarea { margin: 5px 0; padding: 5px; width: 100%; }
-    textarea { height: 80px; }
-    section { border: 1px solid #ccc; padding: 10px; margin-bottom: 20px; border-radius: 5px; }
-    h2 { margin-top: 0; }
-    pre { background: #f4f4f4; padding: 10px; border-radius: 5px; }
-</style>
+    <meta charset="UTF-8" />
+    <title>Model Registry Dashboard</title>
+    <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
+    <div class="app">
+        <aside class="sidebar">
+            <h1>Model Registry</h1>
+            <nav>
+                <a href="index.html" data-link="index">Dashboard</a>
+                <a href="artifact.html" data-link="artifact">Artifact Detail</a>
+                <a href="upload.html" data-link="upload">Upload</a>
+            </nav>
+            <div class="status" id="healthBadge">Health: ?</div>
+            <button class="small" id="themeToggle">Toggle Theme</button>
+        </aside>
+        <main>
+        <section class="fade-in">
+            <h2>Overview</h2>
+            <div class="muted">All responses include timestamp headers + <code>_timestamps</code> in JSON bodies. Authorization not required.</div>
+        </section>
 
-<h1>Model Registry Frontend</h1>
+        <div class="divider"></div>
 
-<label>X-Authorization Token:</label>
-<input type="text" id="authToken" placeholder="Enter X-Authorization token" />
+        <section class="fade-in">
+            <h2>Artifact Operations</h2>
+            <div class="grid cols-3" id="panels">
+                <div class="card" id="panel-create">
+                    <h3>Create <span class="badge">POST</span></h3>
+                    <input id="createType" placeholder="type (model)" />
+                    <input id="createUrl" placeholder="source URL" />
+                    <button onclick="uiCreate()">Create</button>
+                    <div class="timestamps" id="createTs"></div>
+                    <pre id="createResult"></pre>
+                </div>
+                <div class="card" id="panel-retrieve">
+                    <h3>Retrieve <span class="badge">GET</span></h3>
+                    <input id="getType" placeholder="type" />
+                    <input id="getId" placeholder="artifact id" />
+                    <button onclick="uiGet()">Retrieve</button>
+                    <div class="timestamps" id="getTs"></div>
+                    <pre id="getResult"></pre>
+                </div>
+                <div class="card" id="panel-update">
+                    <h3>Update <span class="badge">PUT</span></h3>
+                    <input id="updateType" placeholder="type" />
+                    <input id="updateId" placeholder="id" />
+                    <input id="updateUrl" placeholder="new URL or field" />
+                    <button onclick="uiUpdate()">Update</button>
+                    <div class="timestamps" id="updateTs"></div>
+                    <pre id="updateResult"></pre>
+                </div>
+                <div class="card" id="panel-list">
+                    <h3>List <span class="badge">POST</span></h3>
+                    <textarea id="listQuery" placeholder='Queries JSON e.g. [{"name": ".*"}]'></textarea>
+                    <button onclick="uiList()">List</button>
+                    <div class="timestamps" id="listTs"></div>
+                    <pre id="listResult"></pre>
+                </div>
+                <div class="card" id="panel-regex">
+                    <h3>Regex Search <span class="badge">POST</span></h3>
+                    <input id="regexPattern" placeholder="pattern (.*model.*)" />
+                    <button onclick="uiRegex()">Search</button>
+                    <div class="timestamps" id="regexTs"></div>
+                    <pre id="regexResult"></pre>
+                </div>
+                <div class="card" id="panel-rate">
+                    <h3>Rate Model <span class="badge">GET</span></h3>
+                    <input id="rateId" placeholder="model id" />
+                    <button onclick="uiRate()">Get Rating</button>
+                    <div class="timestamps" id="rateTs"></div>
+                    <pre id="rateResult"></pre>
+                </div>
+                <div class="card" id="panel-cost">
+                    <h3>Cost <span class="badge">GET</span></h3>
+                    <input id="costType" placeholder="type" />
+                    <input id="costId" placeholder="id" />
+                    <button onclick="uiCost()">Get Cost</button>
+                    <div class="timestamps" id="costTs"></div>
+                    <pre id="costResult"></pre>
+                </div>
+                <div class="card" id="panel-license">
+                    <h3>License Check <span class="badge">POST</span></h3>
+                    <input id="licenseId" placeholder="model id" />
+                    <input id="licenseUrl" placeholder="github url" />
+                    <button onclick="uiLicense()">Check License</button>
+                    <div class="timestamps" id="licenseTs"></div>
+                    <pre id="licenseResult"></pre>
+                </div>
+                <div class="card" id="panel-lineage">
+                    <h3>Lineage <span class="badge">GET</span></h3>
+                    <input id="lineageId" placeholder="model id" />
+                    <button onclick="uiLineage()">Get Lineage</button>
+                    <div class="timestamps" id="lineageTs"></div>
+                    <pre id="lineageResult"></pre>
+                </div>
+                <div class="card" id="panel-reset">
+                    <h3>Reset <span class="badge">DELETE</span></h3>
+                    <button class="danger" onclick="uiReset()">Reset Registry</button>
+                    <div class="timestamps" id="resetTs"></div>
+                    <pre id="resetResult"></pre>
+                </div>
+                <div class="card" id="panel-health">
+                    <h3>Health <span class="badge">GET</span></h3>
+                    <button onclick="uiHealth()">Check Health</button>
+                    <div class="timestamps" id="healthTs"></div>
+                    <pre id="healthResult"></pre>
+                </div>
+            </div>
+        </section>
+        </main>
+    </div>
 
-<script>
-const baseUrl = "http://localhost:8000";
+    <script src="scripts/api.js"></script>
+    <script>
+        const root = document.documentElement;
+        let dark = false;
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            dark = !dark;
+            if (dark) {
+                root.style.setProperty('--bg', '#0f172a');
+                root.style.setProperty('--panel-bg', '#1e293b');
+                root.style.setProperty('--border', '#334155');
+                root.style.setProperty('--text', '#e2e8f0');
+                root.style.setProperty('--muted', '#94a3b8');
+            } else {
+                root.style.removeProperty('--bg');
+                root.style.removeProperty('--panel-bg');
+                root.style.removeProperty('--border');
+                root.style.removeProperty('--text');
+                root.style.removeProperty('--muted');
+            }
+        });
 
-function getAuthHeader() {
-    const token = document.getElementById("authToken").value;
-    return token ? { "X-Authorization": token } : {};
-}
-
-async function safeJson(res) {
-    try { return JSON.stringify(await res.json(), null, 2); }
-    catch { return await res.text(); }
-}
-</script>
-
-<!-- Create Artifact -->
-<section>
-<h2>Create Artifact</h2>
-<label>Artifact Type:</label>
-<input type="text" id="createType" placeholder="model/dataset/code" />
-<label>Artifact URL:</label>
-<input type="text" id="createUrl" placeholder="https://github.com/user/repo" />
-<button onclick="createArtifact()">Create Artifact</button>
-<pre id="createResult"></pre>
-</section>
-
-<script>
-async function createArtifact() {
-    const type = document.getElementById("createType").value;
-    const url = document.getElementById("createUrl").value;
-
-    const res = await fetch(`${baseUrl}/artifact/${type}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeader() },
-        body: JSON.stringify({ url })
-    });
-
-    document.getElementById("createResult").textContent = await safeJson(res);
-}
-</script>
-
-<!-- Retrieve -->
-<section>
-<h2>Retrieve Artifact</h2>
-<input id="getId" placeholder="Artifact ID" />
-<button onclick="getArtifact()">Retrieve</button>
-<pre id="getResult"></pre>
-</section>
-
-<script>
-async function getArtifact() {
-    const id = document.getElementById("getId").value;
-
-    const res = await fetch(`${baseUrl}/artifacts/${id}`, {
-        headers: getAuthHeader()
-    });
-
-    document.getElementById("getResult").textContent = await safeJson(res);
-}
-</script>
-
-<!-- Update -->
-<section>
-<h2>Update Artifact</h2>
-<input id="updateId" placeholder="Artifact ID" />
-<input id="updateUrl" placeholder="New Artifact URL" />
-<button onclick="updateArtifact()">Update</button>
-<pre id="updateResult"></pre>
-</section>
-
-<script>
-async function updateArtifact() {
-    const id = document.getElementById("updateId").value;
-    const url = document.getElementById("updateUrl").value;
-
-    const res = await fetch(`${baseUrl}/artifacts/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...getAuthHeader() },
-        body: JSON.stringify({ url })
-    });
-
-    document.getElementById("updateResult").textContent = await safeJson(res);
-}
-</script>
-
-<!-- Delete -->
-<section>
-<h2>Delete Artifact</h2>
-<input id="deleteId" placeholder="Artifact ID" />
-<button onclick="deleteArtifact()">Delete</button>
-<pre id="deleteResult"></pre>
-</section>
-
-<script>
-async function deleteArtifact() {
-    const id = document.getElementById("deleteId").value;
-
-    const res = await fetch(`${baseUrl}/artifacts/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeader()
-    });
-
-    document.getElementById("deleteResult").textContent = await safeJson(res);
-}
-</script>
-
-<!-- List -->
-<section>
-<h2>List All Artifacts</h2>
-<button onclick="listArtifacts()">List</button>
-<pre id="listResult"></pre>
-</section>
-
-<script>
-async function listArtifacts() {
-    const query = [{ name: ".*" }]; // your backend expects List[ArtifactQuery]
-
-    const res = await fetch(`${baseUrl}/artifacts`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...getAuthHeader() },
-        body: JSON.stringify(query)
-    });
-
-    document.getElementById("listResult").textContent = await safeJson(res);
-}
-</script>
-
-<!-- Reset -->
-<section>
-<h2>Reset Registry</h2>
-<button onclick="resetRegistry()">Reset Registry</button>
-<pre id="resetResult"></pre>
-</section>
-
-<script>
-async function resetRegistry() {
-    const res = await fetch(`${baseUrl}/reset`, {
-        method: "DELETE",
-        headers: getAuthHeader()
-    });
-
-    document.getElementById("resetResult").textContent = await safeJson(res);
-}
-</script>
-
-<!-- Health -->
-<section>
-<h2>Health Check</h2>
-<button onclick="healthCheck()">Check Health</button>
-<pre id="healthResult"></pre>
-</section>
-
-<script>
-async function healthCheck() {
-    const res = await fetch(`${baseUrl}/health`);
-    document.getElementById("healthResult").textContent = await safeJson(res);
-}
-</script>
-
+        function show(resultEl, tsEl, res) {
+            resultEl.textContent = res.pretty;
+            tsEl.textContent = `req: ${res.requestTs || '-'} | res: ${res.responseTs || '-'} | status: ${res.status}`;
+            const card = tsEl.closest('.card');
+            if (card) {
+                card.dataset.status = res.status;
+                card.style.borderColor = res.status >= 400 ? 'var(--danger)' : 'var(--border)';
+            }
+        }
+        async function uiCreate() {
+            const type = document.getElementById('createType').value.trim();
+            const url = document.getElementById('createUrl').value.trim();
+            const res = await apiCall('POST', `/artifact/${type}`, { url });
+            show(document.getElementById('createResult'), document.getElementById('createTs'), res);
+        }
+        async function uiGet() {
+            const type = document.getElementById('getType').value.trim();
+            const id = document.getElementById('getId').value.trim();
+            const res = await apiCall('GET', `/artifacts/${type}/${id}`);
+            show(document.getElementById('getResult'), document.getElementById('getTs'), res);
+        }
+        async function uiUpdate() {
+            const type = document.getElementById('updateType').value.trim();
+            const id = document.getElementById('updateId').value.trim();
+            const url = document.getElementById('updateUrl').value.trim();
+            const res = await apiCall('PUT', `/artifacts/${type}/${id}`, { url });
+            show(document.getElementById('updateResult'), document.getElementById('updateTs'), res);
+        }
+        async function uiList() {
+            let body = null; const raw = document.getElementById('listQuery').value.trim();
+            if (raw) { try { body = JSON.parse(raw); } catch { body = null; } }
+            const res = await apiCall('POST', '/artifacts', body);
+            show(document.getElementById('listResult'), document.getElementById('listTs'), res);
+        }
+        async function uiRegex() {
+            const pattern = document.getElementById('regexPattern').value.trim();
+            const res = await apiCall('POST', '/artifact/byRegEx', { regex: pattern });
+            show(document.getElementById('regexResult'), document.getElementById('regexTs'), res);
+        }
+        async function uiRate() {
+            const id = document.getElementById('rateId').value.trim();
+            const res = await apiCall('GET', `/artifact/model/${id}/rate`);
+            show(document.getElementById('rateResult'), document.getElementById('rateTs'), res);
+        }
+        async function uiCost() {
+            const type = document.getElementById('costType').value.trim();
+            const id = document.getElementById('costId').value.trim();
+            const res = await apiCall('GET', `/artifact/${type}/${id}/cost`);
+            show(document.getElementById('costResult'), document.getElementById('costTs'), res);
+        }
+        async function uiLicense() {
+            const id = document.getElementById('licenseId').value.trim();
+            const url = document.getElementById('licenseUrl').value.trim();
+            const res = await apiCall('POST', `/artifact/model/${id}/license-check`, { github_url: url });
+            show(document.getElementById('licenseResult'), document.getElementById('licenseTs'), res);
+        }
+        async function uiLineage() {
+            const id = document.getElementById('lineageId').value.trim();
+            const res = await apiCall('GET', `/artifact/model/${id}/lineage`);
+            show(document.getElementById('lineageResult'), document.getElementById('lineageTs'), res);
+        }
+        async function uiReset() {
+            const res = await apiCall('DELETE', '/reset');
+            show(document.getElementById('resetResult'), document.getElementById('resetTs'), res);
+        }
+        async function uiHealth() {
+            const res = await apiCall('GET', '/health');
+            show(document.getElementById('healthResult'), document.getElementById('healthTs'), res);
+            document.getElementById('healthBadge').textContent = `Health: ${res.status}`;
+            document.getElementById('healthBadge').style.color = res.status === 200 ? 'var(--accent)' : 'var(--danger)';
+        }
+        // Auto health ping + active nav highlight
+        uiHealth();
+        const current = location.pathname.split('/').pop().replace('.html','') || 'index';
+        document.querySelectorAll('.sidebar nav a').forEach(a => {
+            if (a.dataset.link === current) a.classList.add('active');
+        });
+    </script>
 </body>
 </html>
