@@ -3,10 +3,14 @@ import re
 import logging
 import uuid
 
-from cli.utils.MetadataFetcher import MetadataFetcher
-from cli.utils.MetricScorer import MetricScorer
-import json
-from cli.utils.MetricDataFetcher import MetricDataFetcher
+try:
+    from ModelRegistry.cli.utils.MetadataFetcher import MetadataFetcher
+    from ModelRegistry.cli.utils.MetricScorer import MetricScorer
+    from ModelRegistry.cli.utils.MetricDataFetcher import MetricDataFetcher
+except ModuleNotFoundError:  # fallback when running inside ModelRegistry
+    from cli.utils.MetadataFetcher import MetadataFetcher
+    from cli.utils.MetricScorer import MetricScorer
+    from cli.utils.MetricDataFetcher import MetricDataFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -34,14 +38,6 @@ class ArtifactManager:
     def scoreArtifact(self, artifact_data: Dict[str, Any]) -> Dict[str, Any]:
         """Score artifact using all metrics."""
         scores = self.scorer.score_artifact(artifact_data)
-        # backward-compatible: if scorer returns a JSON string, parse it
-        if isinstance(scores, str):
-            try:
-                scores = json.loads(scores)
-            except Exception:
-                # if parsing fails, return the raw string to avoid hiding errors
-                return {"raw_scores": scores}
-
         return scores
 
     def processUrl(self, url: str) -> Dict[str, Any]:
