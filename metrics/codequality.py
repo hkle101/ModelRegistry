@@ -1,8 +1,13 @@
 from typing import Any, Dict
 
-# Use package-local BaseMetric and top-level datafetchers package
+# BaseMetric via relative import works in both contexts
 from .basemetric import BaseMetric
-from ..datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
+
+# DataFetcher: support both package and top-level execution
+try:
+  from ModelRegistry.datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
+except ModuleNotFoundError:
+  from datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
 
 
 class CodeQualityMetric(BaseMetric):

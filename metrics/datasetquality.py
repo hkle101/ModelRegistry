@@ -4,7 +4,10 @@ import requests
 import logging
 from typing import Any, Dict
 from .basemetric import BaseMetric
-from datafetchers.datasetdata_fetcher import DatasetDataFetcher
+try:
+    from ModelRegistry.datafetchers.datasetdata_fetcher import DatasetDataFetcher
+except ModuleNotFoundError:
+    from datafetchers.datasetdata_fetcher import DatasetDataFetcher
 
 
 class DatasetQualityMetric(BaseMetric):

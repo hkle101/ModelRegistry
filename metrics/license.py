@@ -1,6 +1,9 @@
 from typing import Any, Dict
 from .basemetric import BaseMetric
-from datafetchers.licensedata_fetcher import LicenseDataFetcher
+try:
+    from ModelRegistry.datafetchers.licensedata_fetcher import LicenseDataFetcher
+except ModuleNotFoundError:
+    from datafetchers.licensedata_fetcher import LicenseDataFetcher
 
 
 class LicenseMetric(BaseMetric):
