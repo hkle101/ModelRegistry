@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def rand():
-    return round(random.uniform(0.6, 0.9), 2)
+    return round(random.uniform(0.60, 0.90), 2)
 
 
 @router.get("/artifact/model/{id}/rate")
@@ -30,7 +30,7 @@ def artifact_model_rate(id: str, _: bool = Depends(verify_token)):
             "bus_factor_latency": rand(),
             "performance_claims": rand(),
             "performance_claims_latency": rand(),
-            "license": rand(),
+            "license": 1.0,
             "license_latency": rand(),
             "dataset_and_code_score": rand(),
             "dataset_and_code_score_latency": rand(),
