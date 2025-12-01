@@ -9,7 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 class ArtifactUploadRequest(BaseModel):
+    name: str | None = None
     url: str
+
+
 
 
 @router.post("/artifact/{artifact_type}", status_code=status.HTTP_201_CREATED)
@@ -24,6 +27,8 @@ def artifact_create(
         artifact_data = artifact_manager.processUrl(request.url)
         artifact_data["artifact_type"] = artifact_type
         artifact_data["processed_url"] = request.url
+        if request.name:
+            artifact_data["name"] = request.name
 
         # Convert artifact data to bytes for storage
         artifact_bytes = json.dumps(artifact_data, indent=2).encode("utf-8")
