@@ -2,7 +2,7 @@ from typing import Any, Dict
 
 # Use package-local BaseMetric and top-level datafetchers package
 from .basemetric import BaseMetric
-from datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
+from ..datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
 
 
 class CodeQualityMetric(BaseMetric):
