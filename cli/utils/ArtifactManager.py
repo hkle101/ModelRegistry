@@ -48,11 +48,9 @@ class ArtifactManager:
         artifact_data = self.getArtifactData(url)
         scores = self.scoreArtifact(artifact_data)
 
-        artifact_data.update({
-            "artifact_id": artifact_id,
-            "name": name,
-            "scores": scores
-        })
+        artifact_data.update(
+            {"artifact_id": artifact_id, "name": name, "scores": scores}
+        )
 
         logger.info(f"Processed artifact {name} ({artifact_id}) from URL: {url}")
         return artifact_data

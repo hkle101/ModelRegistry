@@ -42,6 +42,7 @@ file_handler.setLevel(logging.INFO)
 file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
 logger.addHandler(file_handler)
 
+
 # ============================================================
 # JSON Body Logging Middleware
 # ============================================================
@@ -71,6 +72,7 @@ class LogRequestBodyMiddleware(BaseHTTPMiddleware):
 
         return await call_next(request)
 
+
 # ============================================================
 # FastAPI application setup
 # ============================================================
@@ -94,6 +96,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # ============================================================
 # Timestamp injection middleware
 # ============================================================
@@ -107,11 +110,15 @@ async def timestamp_middleware(request: Request, call_next):
     response.headers["x-response-timestamp"] = response_ts
 
     try:
-        if getattr(response, "media_type", None) == "application/json" and hasattr(response, "body"):
+        if getattr(response, "media_type", None) == "application/json" and hasattr(
+            response, "body"
+        ):
             body = response.body.decode()
             data = json.loads(body)
             if isinstance(data, dict):
-                data.setdefault("_timestamps", {"request": request_ts, "response": response_ts})
+                data.setdefault(
+                    "_timestamps", {"request": request_ts, "response": response_ts}
+                )
                 encoded = json.dumps(data).encode()
                 response.body = encoded
                 response.headers["content-length"] = str(len(encoded))
@@ -119,6 +126,7 @@ async def timestamp_middleware(request: Request, call_next):
         pass
 
     return response
+
 
 # ============================================================
 # Router registration
