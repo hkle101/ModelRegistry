@@ -1,15 +1,28 @@
 from typing import Any, Dict
 import logging
-from cli.utils.MetadataFetcher import MetadataFetcher
+try:
+    from ModelRegistry.cli.utils.MetadataFetcher import MetadataFetcher
+except ModuleNotFoundError:
+    from cli.utils.MetadataFetcher import MetadataFetcher
 
-from datafetchers.licensedata_fetcher import LicenseDataFetcher
-from datafetchers.busfactordata_fetcher import BusFactorDataFetcher
-from datafetchers.datasetdata_fetcher import DatasetDataFetcher
-from datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
-from datafetchers.sizedata_fetcher import SizeDataFetcher
-from datafetchers.performanceClaimsdata_fetcher import PerformanceClaimsDataFetcher
-from datafetchers.rampuptimedata_fetcher import RampUpTimeDataFetcher
-from datafetchers.datasetnCodedata_fetcher import DatasetAndCodeDataFetcher
+try:
+    from ModelRegistry.datafetchers.licensedata_fetcher import LicenseDataFetcher
+    from ModelRegistry.datafetchers.busfactordata_fetcher import BusFactorDataFetcher
+    from ModelRegistry.datafetchers.datasetdata_fetcher import DatasetDataFetcher
+    from ModelRegistry.datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
+    from ModelRegistry.datafetchers.sizedata_fetcher import SizeDataFetcher
+    from ModelRegistry.datafetchers.performanceClaimsdata_fetcher import PerformanceClaimsDataFetcher
+    from ModelRegistry.datafetchers.rampuptimedata_fetcher import RampUpTimeDataFetcher
+    from ModelRegistry.datafetchers.datasetnCodedata_fetcher import DatasetAndCodeDataFetcher
+except ModuleNotFoundError:
+    from datafetchers.licensedata_fetcher import LicenseDataFetcher
+    from datafetchers.busfactordata_fetcher import BusFactorDataFetcher
+    from datafetchers.datasetdata_fetcher import DatasetDataFetcher
+    from datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
+    from datafetchers.sizedata_fetcher import SizeDataFetcher
+    from datafetchers.performanceClaimsdata_fetcher import PerformanceClaimsDataFetcher
+    from datafetchers.rampuptimedata_fetcher import RampUpTimeDataFetcher
+    from datafetchers.datasetnCodedata_fetcher import DatasetAndCodeDataFetcher
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -59,7 +72,7 @@ class MetricDataFetcher:
                     e,
                 )
                 continue
-
+        artifact_data["download_url"] = meta_info.get("download_url")
         return artifact_data
 
     def run(self):

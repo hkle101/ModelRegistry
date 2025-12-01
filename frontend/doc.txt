@@ -1,0 +1,65 @@
+frontend/
+├─ index.html               # Main page for listing and searching artifacts
+├─ upload.html              # Page with a form to upload artifacts
+├─ artifact.html            # Page to view a single artifact's details (rate, lineage, license check)
+├─ reset.html               # Page with "Reset Registry" button
+├─ assets/
+│   ├─ style.css            # All styling
+│   └─ logo.png             # Logo or images
+└─ scripts/
+    ├─ main.js              # Handles navigation, AJAX calls
+    ├─ artifact.js          # Fetch artifact details, rating, lineage, license check
+    └─ upload.js            # Handles artifact upload
+
+Frontend Files
+
+frontend/index.html
+	•	Main page.
+	•	Displays dashboard of all artifacts.
+	•	Shows system health status and basic navigation links.
+	•	Uses JS (main.js) to fetch artifact list and health data.
+
+frontend/upload.html
+	•	Page with a form for uploading new artifacts.
+	•	User enters a URL and selects artifact type (model, dataset, etc.).
+	•	Uses JS (upload.js) to call POST /artifact/{artifact_type}.
+
+frontend/artifact.html
+	•	Artifact details page.
+	•	Shows information for a single artifact:
+	•	Metadata (name, type, ID)
+	•	Rating scores
+	•	Lineage graph
+	•	Size/cost
+	•	License check results
+	•	Uses JS (artifact.js) to call endpoints:
+	•	/rate, /cost, /lineage, /license-check
+
+frontend/reset.html
+	•	Simple page with a “Reset Registry” button.
+	•	Uses JS (main.js) to call DELETE /reset.
+	•	Displays success/failure messages to the user.
+
+frontend/assets/style.css
+	•	Contains all styling for your frontend pages.
+	•	Controls layout, colors, fonts, buttons, tables, etc.
+	•	Ensures pages are readable and ADA/WCAG compliant.
+
+frontend/assets/logo.png
+	•	Optional logo or images used in your frontend.
+
+frontend/scripts/main.js
+	•	Shared JS functions for the frontend.
+	•	Handles:
+	•	System health check (GET /health)
+	•	Navigation between pages
+	•	General UI updates
+
+frontend/scripts/upload.js
+	•	JS specifically for upload.html.
+	•	Handles form submission, calls backend endpoint, and displays upload results.
+
+frontend/scripts/artifact.js
+	•	JS for artifact.html.
+	•	Fetches artifact details, ratings, lineage, size cost, and license check results.
+	•	Updates the page dynamically with this data.

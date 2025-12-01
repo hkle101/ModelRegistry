@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<title>Artifact Detail • Model Registry</title>
+	<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+	<div class="app">
+		<aside class="sidebar">
+			<h1>Model Registry</h1>
+			<nav>
+				<a href="index.html" data-link="index">Dashboard</a>
+				<a href="artifact.html" data-link="artifact">Artifact Detail</a>
+				<a href="upload.html" data-link="upload">Upload</a>
+			</nav>
+			<button class="small" id="themeToggle">Toggle Theme</button>
+		</aside>
+		<main>
+		<section class="fade-in card-set">
+			<div class="card" style="grid-column:1/-1;">
+				<h3>Lookup <span class="badge">GET</span></h3>
+				<div class="grid cols-2">
+					<div class="col">
+						<label>Artifact Type</label>
+						<input id="type" placeholder="model" />
+					</div>
+					<div class="col">
+						<label>Artifact ID</label>
+						<input id="artifactId" placeholder="id" />
+					</div>
+				</div>
+				<button onclick="loadAll()">Load All Data</button>
+				<div class="timestamps" id="metaTs"></div>
+				<pre id="metaResult"></pre>
+			</div>
+			<div class="card">
+				<h3>Rating <span class="badge">GET</span></h3>
+				<button onclick="loadRating()">Fetch Rating</button>
+				<div class="timestamps" id="rateTs"></div>
+				<pre id="rateResult"></pre>
+			</div>
+			<div class="card">
+				<h3>Cost <span class="badge">GET</span></h3>
+				<button onclick="loadCost()">Fetch Cost</button>
+				<div class="timestamps" id="costTs"></div>
+				<pre id="costResult"></pre>
+			</div>
+			<div class="card">
+				<h3>Lineage <span class="badge">GET</span></h3>
+				<button onclick="loadLineage()">Fetch Lineage</button>
+				<div class="timestamps" id="lineageTs"></div>
+				<pre id="lineageResult"></pre>
+			</div>
+			<div class="card">
+				<h3>License Check <span class="badge">POST</span></h3>
+				<input id="licenseUrl" placeholder="GitHub URL" />
+				<button onclick="licenseCheck()">Check License</button>
+				<div class="timestamps" id="licenseTs"></div>
+				<pre id="licenseResult"></pre>
+			</div>
+		</section>
+
+		</main>
+	</div>
+	<script src="scripts/api.js"></script>
+	<script>
+		const root = document.documentElement; let dark=false;
+		document.getElementById('themeToggle').addEventListener('click',()=>{
+			dark=!dark;
+			if(dark){
+				root.style.setProperty('--bg','#0f172a');
+				root.style.setProperty('--panel-bg','#1e293b');
+				root.style.setProperty('--border','#334155');
+				root.style.setProperty('--text','#e2e8f0');
+				root.style.setProperty('--muted','#94a3b8');
+			} else {
+				root.style.removeProperty('--bg');
+				root.style.removeProperty('--panel-bg');
+				root.style.removeProperty('--border');
+				root.style.removeProperty('--text');
+				root.style.removeProperty('--muted');
+			}
+		});
+		function val(id){ return document.getElementById(id).value.trim(); }
+		function show(el, tsEl, res){ el.textContent = res.pretty; tsEl.textContent = `req: ${res.requestTs||'-'} | res: ${res.responseTs||'-'} | status: ${res.status}`; }
+		async function loadMeta(){
+			const t = val('type'); const id = val('artifactId');
+			if(!t || !id) return;
+			const res = await apiCall('GET', `/artifacts/${t}/${id}`);
+			show(document.getElementById('metaResult'), document.getElementById('metaTs'), res);
+		}
+		async function loadRating(){
+			const id = val('artifactId'); if(!id) return;
+			const res = await apiCall('GET', `/artifact/model/${id}/rate`);
+			show(document.getElementById('rateResult'), document.getElementById('rateTs'), res);
+		}
+		async function loadCost(){
+			const t = val('type'); const id = val('artifactId'); if(!t||!id) return;
+			const res = await apiCall('GET', `/artifact/${t}/${id}/cost`);
+			show(document.getElementById('costResult'), document.getElementById('costTs'), res);
+		}
+		async function loadLineage(){
+			const id = val('artifactId'); if(!id) return;
+			const res = await apiCall('GET', `/artifact/model/${id}/lineage`);
+			show(document.getElementById('lineageResult'), document.getElementById('lineageTs'), res);
+		}
+		async function licenseCheck(){
+			const id = val('artifactId'); const url = val('licenseUrl'); if(!id||!url) return;
+			const res = await apiCall('POST', `/artifact/model/${id}/license-check`, { github_url: url });
+			show(document.getElementById('licenseResult'), document.getElementById('licenseTs'), res);
+		}
+		async function loadAll(){ await loadMeta(); await loadRating(); await loadCost(); await loadLineage(); }
+		// Active nav link
+		const current='artifact';
+		document.querySelectorAll('.sidebar nav a').forEach(a=>{ if(a.dataset.link===current) a.classList.add('active');});
+	</script>
+</body>
+</html>

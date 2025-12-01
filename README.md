@@ -1,10 +1,12 @@
-# Repo2 CLI (metrics runner)
+# Model Registry & Metrics CLI
 
-This folder contains a small CLI that runs several repository/model/dataset
-quality metrics and prints one compact NDJSON record per input URL.
+This repository contains two main components:
 
-This README explains how to run the tool and the sequential flow it follows
-for each URL.
+1. Backend API (`backend/`): FastAPI service exposing artifact registration, listing, retrieval, rating, cost estimation, lineage, license checking, regex search, and reset endpoints. All responses include request/response timestamps (headers + `_timestamps` field when JSON dict).
+2. Frontend (`frontend/`): Lightweight static HTML pages for interacting with the backend (dashboard, artifact detail view, upload/search page).
+3. Metrics CLI (`repo2/` or previously referenced as a metrics runner) that evaluates URLs with a suite of quality metrics and prints one NDJSON record per URL.
+
+Sections below document the metrics CLI (original content preserved) and new frontend usage.
 
 ## Quick start
 
@@ -125,4 +127,77 @@ python3 -m pytest -q
 
 If you'd like, I can also run the integration tests and fix any remaining
 issues so the repo is fully runnable in CI-style tests.
+
+---
+
+## Frontend Usage
+
+Directory: `frontend/`
+
+### Pages
+- `index.html`: Dashboard exposing all backend endpoints (create, retrieve, update, list, regex search, rate, cost, lineage, license-check, reset, health). Shows timestamps per response.
+- `artifact.html`: Focused detail view for a single artifact (metadata, rating, cost, lineage, license check).
+- `upload.html`: Artifact creation form plus regex search and listing.
+
+### Shared Scripts
+- `scripts/api.js`: Fetch wrapper returning `{ status, data, pretty, requestTs, responseTs }`.
+- `scripts/artifacts.js`: Renders artifact arrays as a table.
+- `scripts/main.js`: DOM helpers.
+
+### Styling
+Global CSS in `assets/style.css` (variables, layout, responsive cards, dark code blocks).
+
+### Running the Frontend
+1. Start backend (from repository root):
+  ```bash
+  uvicorn backend.main:app --reload
+  ```
+2. Open `frontend/index.html` (or other page) directly in a browser. No build step required.
+
+### Timestamp Metadata
+Each backend JSON dict response is augmented with `_timestamps: { request, response }` and headers:
+- `x-request-timestamp`
+- `x-response-timestamp`
+
+Frontend displays these per result pane.
+
+### Extending
+- Add new endpoint panels to `index.html` with `apiCall(method, path, body)`.
+- For complex views create a separate HTML file and reuse the scripts.
+- Styling utilities (.grid, .card, .timestamps) are available in `style.css`.
+
+---
+
+## Backend Endpoints Summary
+
+| Method | Path                                   | Purpose |
+|--------|----------------------------------------|---------|
+| POST   | /artifact/{artifact_type}              | Create artifact from URL |
+| POST   | /artifacts                             | List artifacts (optional queries) |
+| GET    | /artifacts/{artifact_type}/{id}        | Retrieve artifact metadata |
+| PUT    | /artifacts/{artifact_type}/{id}        | Update artifact (baseline stub) |
+| DELETE | /reset                                 | Reset registry storage |
+| POST   | /artifact/byRegEx                      | Regex search by name |
+| GET    | /artifact/model/{id}/rate              | Return randomized rating scores |
+| GET    | /artifact/{artifact_type}/{id}/cost    | Return randomized cost estimate |
+| GET    | /artifact/model/{id}/lineage           | Return mock lineage graph |
+| POST   | /artifact/model/{id}/license-check     | Validate GitHub URL reachability |
+| GET    | /health                                | Service health check |
+
+Authentication: No authorization required. The previous optional `X-Authorization` header has been removed from the frontend and is not needed by the backend (token dependency currently permissive).
+
+---
+
+## Contributing
+
+1. Keep backend modules free of circular imports—shared singletons live in `backend/deps.py`.
+2. Add new routers under `backend/api/` and include them in `backend/main.py`.
+3. Extend frontend by adding new sections following existing patterns and using `apiCall`.
+4. Ensure new responses preserve timestamp injection (automatic via middleware).
+
+---
+
+## License
+Internal / Course Use. Do not redistribute proprietary portions without authorization.
+
 
