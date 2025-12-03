@@ -23,6 +23,7 @@ from backend.api.rate import router as rate_router
 from backend.api.update import router as update_router
 from backend.api.cost import router as cost_router
 from backend.api.byregex import router as byregex_router
+from backend.api.delete import router as delete_router
 
 # ============================================================
 # Logging configuration
@@ -142,5 +143,6 @@ app.include_router(rate_router)
 app.include_router(update_router)
 app.include_router(cost_router)
 app.include_router(byregex_router)
+app.include_router(delete_router)
 
 __all__ = ["app", "artifact_manager", "storage_manager", "verify_token"]

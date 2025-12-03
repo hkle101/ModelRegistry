@@ -1,5 +1,6 @@
 import logging
 import requests
+import re
 from typing import Optional, Any, Dict, List
 from datetime import datetime
 from backend.services.s3_service import S3Service
@@ -102,41 +103,6 @@ class StorageManager:
             logger.exception(f"❌ Exception retrieving artifact with artifact_id={artifact_id}")
             return None
 
-    def delete_artifact(self, artifact_id: str) -> bool:
-        """
-        Delete artifact from S3 and DynamoDB.
-        """
-        try:
-            item = self.db.get_item(artifact_id)
-            if not item:
-                logger.warning(f"⚠️ No artifact found with artifact_id={artifact_id}")
-                return False
-
-            s3_key = item.get("url", "").replace(f"s3://{self.s3.bucket_name}/", "")
-            s3_deleted = False
-            db_deleted = False
-
-            try:
-                s3_deleted = self.s3.delete_artifact(s3_key)
-            except Exception:
-                logger.exception(f"❌ Failed to delete artifact bytes from S3 for artifact_id={artifact_id}")
-
-            try:
-                db_deleted = self.db.delete_item(artifact_id)
-            except Exception:
-                logger.exception(f"❌ Failed to delete artifact metadata from DB for artifact_id={artifact_id}")
-
-            if s3_deleted and db_deleted:
-                logger.info(f"🗑️ Deleted artifact '{item.get('name')}' ({artifact_id})")
-            else:
-                logger.error(f"❌ Failed to completely delete artifact '{item.get('name')}' ({artifact_id})")
-
-            return s3_deleted and db_deleted
-
-        except Exception:
-            logger.exception(f"❌ Exception deleting artifact with artifact_id={artifact_id}")
-            return False
-
     def get_artifact_bytes(self, url: str) -> bytes | None:
         """
         Fetch artifact bytes from a URL.
@@ -226,3 +192,114 @@ class StorageManager:
         except Exception:
             logger.exception("❌ Failed to list artifacts")
             raise
+
+    def search_artifacts_by_regex(self, regex: str) -> List[Dict[str, Any]]:
+        """
+        Search for artifacts whose **name** or **README text** matches a regex.
+
+        Returns a list of full artifact metadata dictionaries.
+        """
+        try:
+            if not regex or not isinstance(regex, str):
+                raise ValueError("Invalid regex")
+
+            logger.info(f"🔍 Running regex search on artifacts: pattern={regex}")
+
+            try:
+                pattern = re.compile(regex, re.IGNORECASE)
+            except re.error as e:
+                logger.error(f"❌ Invalid regex pattern: {regex}")
+                raise ValueError(f"Invalid regex: {e}")
+
+            # Fetch all items (you already do this for scan_all)
+            all_items = self.db.scan_all()
+
+            matched = []
+            for item in all_items:
+                name = item.get("name", "")
+                readme_text = item.get("metadata", {}).get("readme", "")
+
+                # Perform regex match on both name and README
+                if pattern.search(name) or pattern.search(readme_text):
+                    matched.append(item)
+
+            if len(matched) == 0:
+                logger.warning(f"⚠️ No artifacts matched regex: {regex}")
+                return []
+
+            logger.info(f"✅ Regex search returned {len(matched)} artifacts")
+            return matched
+
+        except Exception:
+            logger.exception(f"❌ Failed during regex artifact search (pattern={regex})")
+            raise
+
+    def delete_artifact(self, artifact_id: str) -> bool:
+        """
+        Delete an artifact from both S3 and DynamoDB.
+        Safely handles empty strings, missing fields, and older stored formats.
+        """
+        try:
+            # --- Fetch metadata ---
+            item = self.db.get_item(artifact_id)
+            if not item:
+                logger.warning(f"⚠️ No artifact found with artifact_id={artifact_id}")
+                return False
+
+            name = item.get("name", "<unknown>")
+
+            # --- Extract S3 key from stored s3://bucket/... URI ---
+            raw_url = item.get("url", "")
+
+            if raw_url.startswith("s3://"):
+                # New correct format
+                prefix = f"s3://{self.s3.bucket_name}/"
+                s3_key = raw_url[len(prefix):]
+            else:
+                # Fallback for older formats (or misformatted ones)
+                # example: "https://BUCKET_NAME.s3.amazonaws.com/artifacts/..."
+                s3_key = raw_url.split(f"{self.s3.bucket_name}/")[-1]
+
+            if not s3_key:
+                logger.error(f"❌ Could not extract S3 key for artifact_id={artifact_id}, url={raw_url}")
+                return False
+
+            logger.info(f"🗑️ Preparing to delete artifact '{name}' ({artifact_id})")
+            logger.info(f"   • S3 key resolved as: {s3_key}")
+
+            # --- Delete object from S3 ---
+            try:
+                s3_deleted = self.s3.delete_artifact(s3_key)
+                if s3_deleted:
+                    logger.info(f"   ✔ S3 object deleted: {s3_key}")
+                else:
+                    logger.error(f"   ❌ Failed to delete S3 object: {s3_key}")
+            except Exception:
+                logger.exception(f"❌ Exception while deleting S3 object for {artifact_id}")
+                s3_deleted = False
+
+            # --- Delete metadata from DynamoDB ---
+            try:
+                db_deleted = self.db.delete_item(artifact_id)
+                if db_deleted:
+                    logger.info(f"   ✔ DynamoDB item deleted for artifact_id={artifact_id}")
+                else:
+                    logger.error(f"   ❌ FAILED deleting DynamoDB item for artifact_id={artifact_id}")
+            except Exception:
+                logger.exception(f"❌ Exception while deleting DynamoDB entry for {artifact_id}")
+                db_deleted = False
+
+            # --- Final result ---
+            if s3_deleted and db_deleted:
+                logger.info(f"🗑️✨ Successfully deleted artifact '{name}' ({artifact_id})")
+            else:
+                logger.error(
+                    f"❌ Incomplete delete for artifact '{name}' ({artifact_id}). "
+                    f"S3 deleted={s3_deleted}, DB deleted={db_deleted}"
+                )
+
+            return s3_deleted and db_deleted
+
+        except Exception:
+            logger.exception(f"❌ Unexpected exception while deleting artifact {artifact_id}")
+            return False
