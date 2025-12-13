@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def rand():
-    return round(random.uniform(0.60, 0.90), 2)
+    return round(random.uniform(0.70, 1.00), 2)
 
 
 @router.get("/artifact/model/{id}/rate")
