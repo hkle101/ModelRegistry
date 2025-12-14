@@ -24,8 +24,13 @@ def artifact_create(
     try:
         # Process the artifact URL to get metadata
         artifact_data = artifact_manager.processUrl(request.url)
+        artifact_id = artifact_data.get("artifact_id")
+        # ✅ CLEAN DOWNLOAD URL (new format)
+        base_url = str(http_request.base_url).rstrip("/")
+        download_url = f"{base_url}/artifact/{artifact_id}/download"
         artifact_data["artifact_type"] = artifact_type
         artifact_data["processed_url"] = request.url
+        artifact_data["download_url"] = download_url
         if request.name:
             artifact_data["name"] = request.name
 
@@ -53,12 +58,6 @@ def artifact_create(
             raise HTTPException(
                 status_code=500, detail="Artifact stored but metadata missing"
             )
-
-        artifact_id = stored_metadata.get("artifact_id")
-
-        # ✅ CLEAN DOWNLOAD URL (new format)
-        base_url = str(http_request.base_url).rstrip("/")
-        download_url = f"{base_url}/artifact/{artifact_id}/download"
 
         return {
             "metadata": {

@@ -77,9 +77,7 @@ class StorageManager:
         """
         try:
             metadata = self.create_metadata(artifact_data, artifact_bytes, filename)
-            metadata["download_url"] = self.generate_download_url(
-                metadata["artifact_id"], filename
-            )
+            metadata["download_url"] = artifact_data.get("download_url", "")
             success = self.db.create_item(metadata)
             if success:
                 logger.info(f"✅ Stored artifact '{metadata['name']}' ({metadata['artifact_id']})")
