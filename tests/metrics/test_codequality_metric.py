@@ -30,4 +30,5 @@ def test_codequality_partial_score_with_diversity_bonus():
     }
 
     result = metric.getScores(data)
-    assert result["score"] == 0.12
+    # More generous weighting and scaling lift partial setups
+    assert result["score"] == 0.26

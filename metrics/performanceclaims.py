@@ -11,7 +11,7 @@ class PerformanceClaimsMetric(BaseMetric):
       - Presence of model-index results gives base credit
       - Multiple results, tags related to evaluation/benchmarks, cardData model-index,
         and popularity (downloads/likes) increase the score.
-      - If nothing found, a small floor score is returned (0.1) to avoid 0 for unknowns.
+            - If nothing found, a small floor score is returned (0.3) to avoid 0 for unknowns.
     """
 
     def __init__(self):
@@ -71,17 +71,19 @@ class PerformanceClaimsMetric(BaseMetric):
         except Exception:
             likes = 0
 
-        if downloads > 100000 or likes > 500:
+        if downloads > 1000 or likes > 50:
             score += 0.4
-        elif downloads > 10000 or likes > 100:
+        elif downloads > 100 or likes > 10:
             score += 0.3
-        elif downloads > 1000 or likes > 10:
+        elif downloads > 10 or likes > 5:
             score += 0.2
-        elif downloads > 100 or likes > 5:
+        elif downloads > 1 or likes > 1:
             score += 0.1
 
+        # If we have no explicit evidence, still give a generous baseline score
+        # so models without documented claims are not overly penalized.
         if score == 0.0:
-            score = 0.1
+            score = 0.3
 
         # Ensure score capped at 1.0
         self.score = min(score, 1.0)

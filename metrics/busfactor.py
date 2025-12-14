@@ -9,7 +9,8 @@ class BusFactorMetric(BaseMetric):
       Input data keys:
         - commit_authors: Iterable[str] (optional). If missing or empty -> score 0.0
       Behavior:
-        - Score is min(1.0, unique_author_count / 50.0)
+        - Score is min(1.0, unique_author_count / 10.0)
+          (10 unique contributors is treated as a strong bus factor).
         - Safe against non-list types and nulls; strings or other types won't crash
     """
 
@@ -42,5 +43,5 @@ class BusFactorMetric(BaseMetric):
         if unique_count <= 0:
             self.score = 0.0
         else:
-            # Normalize by 50 unique contributors, cap at 1.0
-            self.score = min(1.0, unique_count / 50.0)
+            # Normalize by 10 unique contributors (more generous), cap at 1.0
+            self.score = min(1.0, unique_count / 10.0)

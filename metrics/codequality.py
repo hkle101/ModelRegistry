@@ -22,13 +22,13 @@ class CodeQualityMetric(BaseMetric):
       - has_readme: bool
       - has_packaging: bool
 
-    Scoring weights:
-      - tests presence:        0.30
-      - CI presence:           0.25
-      - lint config:           0.15
-      - code files (scaled):   0.15  (s_code = min(1.0, total_code_files/50.0))
+    Scoring weights (more generous for partial setups):
+      - tests presence:        0.25
+      - CI presence:           0.20
+      - lint config:           0.10
+      - code files (scaled):   0.25  (s_code = min(1.0, total_code_files/20.0))
         + diversity bonus: min(0.2, (num_languages/5.0)*0.2)
-      - docs/packaging:        0.15  (1.0 if both, 0.5 if one, 0.0 if none)
+      - docs/packaging:        0.20  (1.0 if both, 0.5 if one, 0.0 if none)
     """
 
     def __init__(self):
@@ -44,16 +44,16 @@ class CodeQualityMetric(BaseMetric):
         has_readme = bool(data.get("has_readme", False))
         has_packaging = bool(data.get("has_packaging", False))
 
-        # weights
-        w_tests, w_ci, w_lint, w_code, w_doc_pack = 0.30, 0.25, 0.15, 0.15, 0.15
+        # weights (sum to 1.0, but give more credit for structure/docs)
+        w_tests, w_ci, w_lint, w_code, w_doc_pack = 0.25, 0.20, 0.10, 0.25, 0.20
 
         # subscores
         s_tests = 1.0 if has_tests else 0.0
         s_ci = 1.0 if has_ci else 0.0
         s_lint = 1.0 if has_lint else 0.0
 
-        # code files subscore: scale to 50 files as "full"
-        s_code = min(1.0, total_files / 50.0) if total_files > 0 else 0.0
+        # code files subscore: scale to 20 files as "full" (more generous)
+        s_code = min(1.0, total_files / 20.0) if total_files > 0 else 0.0
 
         # Diversity bonus (max 0.2 added to code subscore before weighting)
         num_langs = len([lang for lang, count in lang_counts.items() if count > 0])
