@@ -25,20 +25,20 @@ class DatasetAndCodeScoreMetric(BaseMetric):
             self.score = 0.0
             return
 
-        # Documentation quality
+        # Documentation quality (slightly more generous thresholds/weights)
         if data.get("has_documentation"):
             desc = data.get("description") or ""
             desc_len = len(str(desc))
             if desc_len > 200:
-                score += 0.30
+                score += 0.35
             elif desc_len > 100:
-                score += 0.20
+                score += 0.25
             elif desc_len > 50:
-                score += 0.10
+                score += 0.15
 
-        # Code examples
+        # Code examples – stronger signal for usability
         if data.get("has_code_examples"):
-            score += 0.25
+            score += 0.30
 
         # Dataset-specific example count
         category = (data.get("category") or "").upper()
@@ -49,13 +49,13 @@ class DatasetAndCodeScoreMetric(BaseMetric):
                 example_count = 0
 
             if example_count > 1_000_000:
-                score += 0.20
+                score += 0.25
             elif example_count > 100_000:
-                score += 0.15
+                score += 0.20
             elif example_count > 10_000:
-                score += 0.10
+                score += 0.15
             elif example_count > 1_000:
-                score += 0.05
+                score += 0.08
         elif category in {"MODEL", "CODE"}:
             if data.get("ml_integration"):
                 score += 0.20
@@ -65,9 +65,9 @@ class DatasetAndCodeScoreMetric(BaseMetric):
         if license_info and license_info not in {"unknown", "none", ""}:
             common_licenses = ["apache", "mit", "bsd", "gpl", "cc", "mozilla"]
             if any(lic in license_info for lic in common_licenses):
-                score += 0.15
+                score += 0.20
             else:
-                score += 0.08
+                score += 0.10
 
         # Engagement: downloads and likes
         engagement = data.get("engagement") or {}
@@ -80,8 +80,9 @@ class DatasetAndCodeScoreMetric(BaseMetric):
         except Exception:
             likes = 0
 
-        score += min(downloads / 1000.0, 0.10)
-        score += min(likes / 100.0, 0.05)
+        # Engagement: more generous caps
+        score += min(downloads / 1000.0, 0.15)
+        score += min(likes / 100.0, 0.08)
 
         # Clamp to [0, 1] to ensure metric output stays in a normalized range
         score = max(0.0, min(score, 1.0))

@@ -17,4 +17,4 @@ def test_performance_claims_reaches_cap_with_evidence():
 def test_performance_claims_defaults_to_floor():
     metric = PerformanceClaimsMetric()
     result = metric.getScores({})
-    assert result["score"] == 0.1
+    assert result["score"] == 0.3

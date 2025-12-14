@@ -40,19 +40,24 @@ class SizeScoreMetric(BaseMetric):
         if model_size == "unknown" or model_size is None:
             return  # keep all scores as 0
 
-        # Calculate score for each device. Round at assignment to 2 decimals
-        self.raspberry_pi_score = round(
-            min(1.0, self.device_limits_mb["raspberry_pi"] / model_size), 2
-        )
-        self.jetson_nano_score = round(
-            min(1.0, self.device_limits_mb["jetson_nano"] / model_size), 2
-        )
-        self.desktop_pc_score = round(
-            min(1.0, self.device_limits_mb["desktop_pc"] / model_size), 2
-        )
-        self.aws_server_score = round(
-            min(1.0, self.device_limits_mb["aws_server"] / model_size), 2
-        )
+        try:
+            model_size_val = float(model_size)
+        except (TypeError, ValueError):
+            return
+
+        if model_size_val <= 0:
+            return
+
+        # Calculate score for each device. Use a small floor (0.1) so that
+        # very large models are not punished with near-zero scores.
+        def _device_score(limit_mb: int) -> float:
+            raw = limit_mb / model_size_val
+            return round(min(1.0, max(0.1, raw)), 2)
+
+        self.raspberry_pi_score = _device_score(self.device_limits_mb["raspberry_pi"])
+        self.jetson_nano_score = _device_score(self.device_limits_mb["jetson_nano"])
+        self.desktop_pc_score = _device_score(self.device_limits_mb["desktop_pc"])
+        self.aws_server_score = _device_score(self.device_limits_mb["aws_server"])
 
     def getScores(self, data: Dict[str, Any]) -> Dict[str, any]:
         """

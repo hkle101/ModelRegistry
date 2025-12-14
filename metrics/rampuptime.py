@@ -254,39 +254,57 @@ class RampUpTimeMetric(BaseMetric):
 
         clear_docs = has_clear_documentation(data)
         if clear_docs:
+            # More generous documentation contribution: even shorter docs give
+            # a meaningful boost, and long docs can almost carry the metric.
             if desc_len > 300:
-                score += 0.30
+                score += 0.40
             elif desc_len > 150:
-                score += 0.25
+                score += 0.35
             elif desc_len > 100:
-                score += 0.15
+                score += 0.25
             else:
-                score += 0.10
+                score += 0.20
 
+        # Quick-start style guidance is very helpful for ramp-up, so weight it
+        # more heavily.
         if has_quick_start_guide(data):
+            score += 0.30
+
+        # Clear installation instructions are also heavily rewarded.
+        if has_installation_instructions(data):
             score += 0.25
 
-        if has_installation_instructions(data):
-            score += 0.20
-
+        # Runnable examples give a big leg up for ramp-up time.
         if has_runnable_examples(data):
-            score += 0.15
+            score += 0.25
 
+        # Minimal dependencies are a nice bonus but not mandatory.
         if has_minimal_dependencies(data):
-            score += 0.10
+            score += 0.15
 
         complexity = get_model_complexity(data)
         if complexity == "small":
-            score += 0.05
+            # Small/lightweight models are easier to ramp up on.
+            score += 0.10
         elif complexity == "large":
-            score -= 0.05
+            # Large models are slightly harder to ramp up on, but keep
+            # the penalty very small so they are not overly punished.
+            score -= 0.02
 
         category = (data.get("category") or "").upper()
         if category == "DATASET":
-            score += 0.05
+            # Datasets tend to be easier to understand once documented.
+            score += 0.10
         elif category == "CODE":
             if not has_runnable_examples(data):
-                score -= 0.05
+                # Lack of runnable examples hurts ramp-up, but only mildly.
+                score -= 0.02
+
+        # Be more generous overall: if we found any positive signal and the
+        # score is still low, lift it to a moderate floor so partially
+        # documented resources do not get overly harsh ramp-up scores.
+        if score > 0.0 and score < 0.3:
+            score = 0.3
 
         # clamp to [0,1]
         self.score = max(0.0, min(score, 1.0))

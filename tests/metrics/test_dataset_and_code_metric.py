@@ -14,7 +14,8 @@ def test_dataset_and_code_scores_dataset_signals():
     }
 
     result = metric.getScores(data)
-    assert result["score"] == 0.85
+    # With more generous scoring, strong dataset/code signals should now hit the cap
+    assert result["score"] == 1.0
 
 
 def test_dataset_and_code_handles_missing_data():
