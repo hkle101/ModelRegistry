@@ -1,13 +1,16 @@
 # ModelRegistry
 
-FastAPI-based artifact registry (S3 + DynamoDB) with a static HTML frontend.
+A FastAPI-based artifact registry backed by S3 + DynamoDB, with a lightweight static HTML frontend and a scoring pipeline (CLI + metrics + data fetchers).
 
-## What’s in this folder
-- `backend/`: FastAPI app (`backend/main.py`) with routers under `backend/api/`
-- `frontend/`: static HTML/CSS/JS pages that call the backend
-- `cli/`, `metrics/`, `datafetchers/`: scoring + metadata utilities used by the rating flow
+## Contents
+- `backend/`: FastAPI app in `backend/main.py` with routers in `backend/api/`
+- `frontend/`: static HTML/CSS/JS pages that call the backend (no build step)
+- `cli/`: URL ingestion + scoring orchestration utilities
+- `metrics/`: metric implementations (8 metrics)
+- `datafetchers/`: external-data adapters used by metrics
+- `tests/`: unit tests + end-to-end API tests (pytest)
 
-## Run locally
+## Quickstart (local)
 From `ModelRegistry/`:
 
 ```bash
@@ -19,7 +22,7 @@ pip install -r requirements.txt
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Alternatively:
+Alternative launcher:
 
 ```bash
 ./runlocal.sh
@@ -28,67 +31,73 @@ Alternatively:
 Backend base URL: `http://localhost:8000`
 
 ## Frontend
-No build step. With the backend running, open any of:
-- `frontend/index.html`
-- `frontend/upload.html`
-- `frontend/artifact.html`
+With the backend running, open any of:
+- `frontend/index.html` (dashboard)
+- `frontend/upload.html` (create, list, regex search)
+- `frontend/artifact.html` (lookup, rate, lineage, license-check)
 
-The frontend uses `frontend/scripts/api.js` (`API_BASE = 'http://localhost:8000'`).
+The frontend calls the backend through `frontend/scripts/api.js` (`API_BASE = 'http://localhost:8000'`).
 
-## Auth
-Routers accept an optional `x-authorization` header for compatibility, but `backend/deps.py` currently treats it as a no-op (all requests allowed).
+## Authentication
+Endpoints accept an optional `x-authorization` header for compatibility. In the baseline implementation, `backend/deps.py` treats authorization as a no-op (all requests allowed).
 
-## Timestamps
-Every request includes timestamp headers:
-- `x-request-timestamp`
-- `x-response-timestamp`
+## Observability
+The backend attaches timestamps to every response:
+- Headers: `x-request-timestamp`, `x-response-timestamp`
+- For JSON object responses only: injects an `_timestamps` field
 
-If the response body is a JSON object, the backend also injects:
+Example:
 
 ```json
-{"_timestamps": {"request": "...", "response": "..."}}
+{
+  "_timestamps": {"request": "...", "response": "..."}
+}
 ```
 
-## API endpoints
-Implemented routers are registered in `backend/main.py`:
+## API
+Routers are registered in `backend/main.py`.
 
-- `GET /health` (returns `200`)
-- `POST /artifact/{artifact_type}` (create)
-	- body: `{ "url": "...", "name": "optional" }`
-	- response: `{ metadata: {name,id,type}, data: {url, download_url} }`
-- `GET /artifacts/{artifact_type}/{id}` (retrieve)
-- `PUT /artifacts/{artifact_type}/{id}` (update placeholder; returns a simple status payload)
-- `DELETE /artifacts/{artifact_type}/{id}` (delete)
+- `GET /health`
+- `POST /artifact/{artifact_type}`
+  - Body: `{ "url": "...", "name": "optional" }`
+  - Response: `{ "metadata": {"name","id","type"}, "data": {"url","download_url"} }`
+- `GET /artifacts/{artifact_type}/{id}`
+- `PUT /artifacts/{artifact_type}/{id}` (placeholder acknowledgement)
+- `DELETE /artifacts/{artifact_type}/{id}`
 - `POST /artifacts` (list + pagination)
-	- body: array of `{ "name": "...", "types": ["model","dataset","code"]? }`
-	- `offset` query param: for pagination
-	- response: array of `{name,id,type,url?,download_url?}` and an `offset` response header when more results exist
-- `POST /artifact/byRegEx` (regex search)
-	- body: `{ "regex": "..." }`
-	- searches over stored `name` and `metadata.readme`
-- `GET /artifact/model/{id}/rate` (rating)
-	- returns cached scores if present; otherwise recomputes via the scoring pipeline
-- `GET /artifact/{artifact_type}/{id}/cost` (cost placeholder; currently returns a random `total_cost`)
-- `GET /artifact/model/{id}/lineage` (lineage placeholder; returns a minimal graph)
-- `POST /artifact/model/{id}/license-check` (license placeholder)
-	- body: `{ "github_url": "..." }`
-	- validates artifact exists and checks the URL is reachable via `HEAD`
-- `DELETE /reset` (clears S3 + DynamoDB)
+  - Body: `[ { "name": "...", "types": ["model","dataset","code"]? } ]`
+  - Pagination: optional `offset` query param; returns `offset` response header when more results exist
+- `POST /artifact/byRegEx`
+  - Body: `{ "regex": "..." }`
+  - Matches against stored `name` and `metadata.readme`
+- `GET /artifact/model/{id}/rate`
+  - Returns stored scores if present; otherwise computes via the scoring pipeline
+- `GET /artifact/{artifact_type}/{id}/cost` (placeholder)
+- `GET /artifact/model/{id}/lineage` (placeholder)
+- `POST /artifact/model/{id}/license-check` (placeholder)
+  - Body: `{ "github_url": "..." }`
+  - Validates artifact exists and checks GitHub URL reachability via `HEAD`
+- `GET /artifact/{artifact_id}/download` (302 redirect)
+- `DELETE /reset`
 
 ## AWS configuration
-Storage defaults are defined in `aws/config.py`:
-- region: `us-east-2`
-- bucket: `artifacts-for-modelregistry`
+Defaults live in `aws/config.py`:
+- Region: `us-east-2`
+- Bucket: `artifacts-for-modelregistry`
 - DynamoDB table: `Artifacts`
 
 Credentials are read from environment variables:
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 
-## Tests
+## Testing
 From `ModelRegistry/`:
 
 ```bash
 pytest -q
 ```
+
+Notes:
+- Unit tests isolate external calls using monkeypatching.
+- API end-to-end tests patch backend dependencies to avoid AWS/network.
 
