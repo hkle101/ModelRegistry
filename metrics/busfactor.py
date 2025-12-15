@@ -1,3 +1,9 @@
+"""Bus factor metric implementation.
+
+This module provides BusFactorMetric, which scores how many distinct
+contributors are involved in a repository based on commit authors.
+"""
+
 from typing import Any, Dict, Iterable
 from .basemetric import BaseMetric
 

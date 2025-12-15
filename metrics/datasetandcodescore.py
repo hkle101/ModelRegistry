@@ -1,3 +1,10 @@
+"""Combined dataset and code metric implementation.
+
+This module exposes DatasetAndCodeScoreMetric, which aggregates
+documentation, examples, dataset size, licensing, and engagement
+signals into a single ease-of-use score.
+"""
+
 from typing import Any, Dict
 from .basemetric import BaseMetric
 

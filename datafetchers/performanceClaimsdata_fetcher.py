@@ -1,3 +1,10 @@
+"""Data fetcher for performance-claims signals.
+
+This module implements PerformanceClaimsDataFetcher, which collects
+model-index entries, tags, card data, and simple popularity metrics
+for use by PerformanceClaimsMetric.
+"""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 

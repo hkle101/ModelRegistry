@@ -1,3 +1,10 @@
+"""Orchestration for running all metrics and computing a net score.
+
+This module defines MetricScorer, which instantiates each metric,
+executes them (in parallel), and aggregates their scores and
+latencies into a single result structure.
+"""
+
 import json
 from typing import Dict, Any
 import logging

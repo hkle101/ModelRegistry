@@ -1,3 +1,10 @@
+"""Data fetcher for code-quality related signals.
+
+This module defines CodeQualityDataFetcher, which inspects repository
+trees, languages, config files, and docs to supply inputs to the
+CodeQualityMetric.
+"""
+
 import os
 from typing import Any, Dict, List, Optional
 

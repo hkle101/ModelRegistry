@@ -1,3 +1,9 @@
+"""Model size compatibility metric implementation.
+
+This module defines SizeScoreMetric, which converts model size into
+hardware-specific compatibility scores for several reference devices.
+"""
+
 from typing import Any, Dict
 from .basemetric import BaseMetric
 import time

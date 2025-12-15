@@ -1,3 +1,10 @@
+"""Data fetcher for ramp-up time signals.
+
+This module exposes RampUpTimeDataFetcher, which normalizes model,
+dataset, and code metadata into the fields expected by
+RampUpTimeMetric (description, siblings, tags, widgets, etc.).
+"""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 

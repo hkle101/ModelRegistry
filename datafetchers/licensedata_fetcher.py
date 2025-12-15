@@ -1,3 +1,10 @@
+"""Data fetcher for license information.
+
+This module defines LicenseDataFetcher, which normalizes license
+fields from Hugging Face model/dataset metadata and GitHub repos
+into a single lowercase string used by LicenseMetric.
+"""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 

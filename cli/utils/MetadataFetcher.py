@@ -1,3 +1,10 @@
+"""Metadata fetching helpers for Hugging Face and GitHub artifacts.
+
+This module defines MetadataFetcher, which discovers artifact type,
+pulls raw metadata via the appropriate API, and computes a convenient
+download URL.
+"""
+
 import requests
 from urllib.parse import urlparse
 import logging

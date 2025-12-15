@@ -1,3 +1,10 @@
+"""Data fetcher for combined dataset and code evidence.
+
+This module provides DatasetAndCodeDataFetcher, which extracts both
+dataset-focused and code-focused signals to support the
+DatasetAndCodeScoreMetric.
+"""
+
 # import logging
 from typing import Any, Dict
 

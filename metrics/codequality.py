@@ -1,3 +1,9 @@
+"""Code quality metric implementation.
+
+This module defines CodeQualityMetric, which scores the presence of
+tests, CI, linting, packaging, language diversity, and repository size.
+"""
+
 from typing import Any, Dict
 
 # BaseMetric via relative import works in both contexts

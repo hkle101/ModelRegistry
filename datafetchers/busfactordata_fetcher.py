@@ -1,3 +1,10 @@
+"""Data fetcher for bus factor evidence.
+
+This module implements BusFactorDataFetcher, which pulls commit
+author information from GitHub or linked repositories to support
+the BusFactorMetric.
+"""
+
 import os
 from typing import Any, Dict, List, Optional, Set
 import requests

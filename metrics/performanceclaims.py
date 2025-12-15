@@ -1,3 +1,10 @@
+"""Performance claims metric implementation.
+
+This module defines PerformanceClaimsMetric, which inspects model
+index entries, tags, card data, and popularity signals to estimate
+how well a model's performance is evidenced.
+"""
+
 from typing import Any, Dict
 from .basemetric import BaseMetric
 

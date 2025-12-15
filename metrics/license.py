@@ -1,3 +1,9 @@
+"""License quality metric implementation.
+
+This module provides LicenseMetric, which normalizes license strings
+from metadata and scores them into coarse quality tiers.
+"""
+
 from typing import Any, Dict
 from .basemetric import BaseMetric
 try:
