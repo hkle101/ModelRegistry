@@ -1,3 +1,9 @@
+"""AWS and application configuration.
+
+Loads environment variables and initializes AWS clients/resources used by the
+backend.
+"""
+
 # core/config.py
 from dotenv import load_dotenv
 import os

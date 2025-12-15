@@ -1,3 +1,8 @@
+"""List API router.
+
+Implements listing/searching registry artifacts with optional pagination.
+"""
+
 from fastapi import APIRouter, HTTPException, Response, Body, Query
 from pydantic import BaseModel
 from typing import Optional, List
@@ -11,10 +16,12 @@ logger = logging.getLogger(__name__)
 # Pydantic models
 # -----------------------------
 class ArtifactQuery(BaseModel):
+    """Query filter for listing artifacts."""
     name: str
     types: Optional[List[str]] = None  # can be ["model", "code", "dataset"]
 
 class ArtifactMetadata(BaseModel):
+    """Response metadata for an artifact in list results."""
     name: str
     id: str
     type: str
@@ -41,6 +48,11 @@ def list_artifacts(
         description="Provide this for pagination. Returns first page if not provided.",
     ),
 ):
+    """List artifacts matching one or more queries.
+
+    Supports pagination via the `offset` query param and an `offset` response
+    header when additional results are available.
+    """
     try:
         if not queries or len(queries) == 0:
             raise HTTPException(status_code=400, detail="Invalid or missing ArtifactQuery array")

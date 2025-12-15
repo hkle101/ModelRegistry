@@ -10,11 +10,15 @@ async function apiCall(method, path, body = null, extraHeaders = {}) {
   let text = '';
   let requestTs = null;
   let responseTs = null;
+  let offset = null;
+  let finalUrl = null;
   try {
     const res = await fetch(API_BASE + path, init);
     status = res.status;
     requestTs = res.headers.get('x-request-timestamp');
     responseTs = res.headers.get('x-response-timestamp');
+    offset = res.headers.get('offset');
+    finalUrl = res.url;
     const ct = res.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
       try { data = await res.json(); } catch { text = await res.text(); }
@@ -25,7 +29,7 @@ async function apiCall(method, path, body = null, extraHeaders = {}) {
     text = 'Network error: ' + e.message;
   }
   const pretty = data ? JSON.stringify(data, null, 2) : text;
-  return { status, data, pretty, requestTs, responseTs, ms: (performance.now() - started).toFixed(1) };
+  return { status, data, pretty, requestTs, responseTs, offset, finalUrl, ms: (performance.now() - started).toFixed(1) };
 }
 
 // Expose globally

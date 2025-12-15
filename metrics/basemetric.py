@@ -1,3 +1,8 @@
+"""Metric base classes.
+
+Defines the `BaseMetric` contract for metric implementations.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 import time

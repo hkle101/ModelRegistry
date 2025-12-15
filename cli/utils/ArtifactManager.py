@@ -1,3 +1,9 @@
+"""ArtifactManager orchestration.
+
+Combines metadata fetching and metric scoring to produce an artifact scoring
+payload suitable for the backend rating endpoint.
+"""
+
 from typing import Dict, Any
 import re
 import logging

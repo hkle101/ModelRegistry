@@ -1,3 +1,5 @@
+"""Data fetcher for license metadata."""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 

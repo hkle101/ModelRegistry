@@ -1,3 +1,9 @@
+"""Data fetcher for the Bus Factor metric.
+
+This module pulls evidence from GitHub/Hugging Face sources and normalizes it
+into a dict shape expected by the bus factor scoring logic.
+"""
+
 import os
 from typing import Any, Dict, List, Optional, Set
 import requests

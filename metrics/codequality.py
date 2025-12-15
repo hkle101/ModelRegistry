@@ -1,3 +1,5 @@
+"""Code Quality scoring metric implementation."""
+
 from typing import Any, Dict
 
 # BaseMetric via relative import works in both contexts

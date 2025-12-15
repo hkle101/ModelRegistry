@@ -1,3 +1,5 @@
+"""Data fetcher for model size metadata."""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 

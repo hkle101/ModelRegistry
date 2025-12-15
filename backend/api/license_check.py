@@ -1,3 +1,9 @@
+"""License check API router.
+
+Validates an artifact exists and performs a lightweight reachability check
+against a provided GitHub URL.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 import requests
@@ -9,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class SimpleLicenseCheckRequest(BaseModel):
+    """Request payload containing a GitHub URL to check."""
     github_url: str
 
 

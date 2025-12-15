@@ -1,3 +1,5 @@
+"""Bus Factor scoring metric implementation."""
+
 from typing import Any, Dict, Iterable
 from .basemetric import BaseMetric
 

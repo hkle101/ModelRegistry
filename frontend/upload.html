@@ -70,7 +70,12 @@
 				root.style.removeProperty('--muted');
 			}
 		});
-		function show(el, tsEl, res){ el.textContent = res.pretty; tsEl.textContent = `req: ${res.requestTs||'-'} | res: ${res.responseTs||'-'} | status: ${res.status}`; }
+		function show(el, tsEl, res){
+			el.textContent = res.pretty;
+			const off = res.offset ? ` | offset: ${res.offset}` : '';
+			const ms = res.ms ? ` | ${res.ms}ms` : '';
+			tsEl.textContent = `req: ${res.requestTs||'-'} | res: ${res.responseTs||'-'} | status: ${res.status}${off}${ms}`;
+		}
 		async function doCreate(){
 			const type = document.getElementById('createType').value.trim();
 			const url = document.getElementById('createUrl').value.trim();

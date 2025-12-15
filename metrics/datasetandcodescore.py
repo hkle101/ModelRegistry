@@ -1,3 +1,5 @@
+"""Dataset-and-code combined scoring metric implementation."""
+
 from typing import Any, Dict
 from .basemetric import BaseMetric
 

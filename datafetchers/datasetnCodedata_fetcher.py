@@ -1,3 +1,8 @@
+"""Data fetcher that normalizes dataset and code evidence.
+
+Provides a uniform dict shape consumed by dataset-and-code scoring.
+"""
+
 # import logging
 from typing import Any, Dict
 

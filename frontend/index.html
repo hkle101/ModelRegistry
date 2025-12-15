@@ -44,6 +44,14 @@
                     <div class="timestamps" id="getTs"></div>
                     <pre id="getResult"></pre>
                 </div>
+                <div class="card" id="panel-delete">
+                    <h3>Delete <span class="badge">DELETE</span></h3>
+                    <input id="delType" placeholder="type" />
+                    <input id="delId" placeholder="artifact id" />
+                    <button class="danger" onclick="uiDelete()">Delete</button>
+                    <div class="timestamps" id="delTs"></div>
+                    <pre id="delResult"></pre>
+                </div>
                 <div class="card" id="panel-update">
                     <h3>Update <span class="badge">PUT</span></h3>
                     <input id="updateType" placeholder="type" />
@@ -73,6 +81,13 @@
                     <button onclick="uiRate()">Get Rating</button>
                     <div class="timestamps" id="rateTs"></div>
                     <pre id="rateResult"></pre>
+                </div>
+                <div class="card" id="panel-download">
+                    <h3>Download <span class="badge">GET</span></h3>
+                    <input id="downloadId" placeholder="artifact id" />
+                    <button onclick="uiDownload()">Open Download</button>
+                    <div class="timestamps" id="downloadTs"></div>
+                    <pre id="downloadResult"></pre>
                 </div>
                 <div class="card" id="panel-cost">
                     <h3>Cost <span class="badge">GET</span></h3>
@@ -137,7 +152,9 @@
 
         function show(resultEl, tsEl, res) {
             resultEl.textContent = res.pretty;
-            tsEl.textContent = `req: ${res.requestTs || '-'} | res: ${res.responseTs || '-'} | status: ${res.status}`;
+            const off = res.offset ? ` | offset: ${res.offset}` : '';
+            const ms = res.ms ? ` | ${res.ms}ms` : '';
+            tsEl.textContent = `req: ${res.requestTs || '-'} | res: ${res.responseTs || '-'} | status: ${res.status}${off}${ms}`;
             const card = tsEl.closest('.card');
             if (card) {
                 card.dataset.status = res.status;
@@ -155,6 +172,12 @@
             const id = document.getElementById('getId').value.trim();
             const res = await apiCall('GET', `/artifacts/${type}/${id}`);
             show(document.getElementById('getResult'), document.getElementById('getTs'), res);
+        }
+        async function uiDelete() {
+            const type = document.getElementById('delType').value.trim();
+            const id = document.getElementById('delId').value.trim();
+            const res = await apiCall('DELETE', `/artifacts/${type}/${id}`);
+            show(document.getElementById('delResult'), document.getElementById('delTs'), res);
         }
         async function uiUpdate() {
             const type = document.getElementById('updateType').value.trim();
@@ -178,6 +201,14 @@
             const id = document.getElementById('rateId').value.trim();
             const res = await apiCall('GET', `/artifact/model/${id}/rate`);
             show(document.getElementById('rateResult'), document.getElementById('rateTs'), res);
+        }
+        async function uiDownload() {
+            const id = document.getElementById('downloadId').value.trim();
+            if (!id) return;
+            const url = `${API_BASE}/artifact/${encodeURIComponent(id)}/download`;
+            window.open(url, '_blank');
+            const res = { status: 0, pretty: `Opened download URL:\n${url}`, requestTs: null, responseTs: null, offset: null, ms: null };
+            show(document.getElementById('downloadResult'), document.getElementById('downloadTs'), res);
         }
         async function uiCost() {
             const type = document.getElementById('costType').value.trim();

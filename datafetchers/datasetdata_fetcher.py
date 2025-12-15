@@ -1,3 +1,5 @@
+"""Data fetcher for dataset-focused metadata used by dataset scoring."""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 

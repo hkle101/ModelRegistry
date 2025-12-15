@@ -1,3 +1,9 @@
+"""Base class for metric data fetchers.
+
+Defines a common interface used by the scoring pipeline to gather the inputs
+needed for each metric.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 from cli.utils.MetadataFetcher import MetadataFetcher

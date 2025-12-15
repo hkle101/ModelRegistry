@@ -1,3 +1,8 @@
+"""Rating API router.
+
+Exposes scoring/ratings retrieval for a model artifact.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 import logging
 import json

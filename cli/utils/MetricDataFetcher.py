@@ -1,3 +1,9 @@
+"""Metric data aggregation.
+
+Builds the structured input required by the metric scorers by delegating to
+individual data fetchers.
+"""
+
 from typing import Any, Dict
 import logging
 try:

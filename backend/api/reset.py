@@ -1,3 +1,8 @@
+"""Reset API router.
+
+Provides an administrative endpoint to clear registry storage.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 import logging
 from backend.deps import storage_manager, verify_token
@@ -8,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 @router.delete("/reset", status_code=200)
 def reset_registry(user_has_permission: bool = Depends(verify_token)):
+    """Reset (clear) storage for the registry."""
     logger.info("Reset request received")
     if not user_has_permission:
         logger.warning("Reset denied: user lacks permission")

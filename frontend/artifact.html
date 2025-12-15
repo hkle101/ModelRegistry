@@ -35,6 +35,18 @@
 				<pre id="metaResult"></pre>
 			</div>
 			<div class="card">
+				<h3>Download <span class="badge">GET</span></h3>
+				<button onclick="openDownload()">Open Download</button>
+				<div class="timestamps" id="downloadTs"></div>
+				<pre id="downloadResult"></pre>
+			</div>
+			<div class="card">
+				<h3>Delete <span class="badge">DELETE</span></h3>
+				<button class="danger" onclick="deleteArtifact()">Delete Artifact</button>
+				<div class="timestamps" id="deleteTs"></div>
+				<pre id="deleteResult"></pre>
+			</div>
+			<div class="card">
 				<h3>Rating <span class="badge">GET</span></h3>
 				<button onclick="loadRating()">Fetch Rating</button>
 				<div class="timestamps" id="rateTs"></div>
@@ -83,12 +95,31 @@
 			}
 		});
 		function val(id){ return document.getElementById(id).value.trim(); }
-		function show(el, tsEl, res){ el.textContent = res.pretty; tsEl.textContent = `req: ${res.requestTs||'-'} | res: ${res.responseTs||'-'} | status: ${res.status}`; }
+		function show(el, tsEl, res){
+			el.textContent = res.pretty;
+			const off = res.offset ? ` | offset: ${res.offset}` : '';
+			const ms = res.ms ? ` | ${res.ms}ms` : '';
+			tsEl.textContent = `req: ${res.requestTs||'-'} | res: ${res.responseTs||'-'} | status: ${res.status}${off}${ms}`;
+		}
 		async function loadMeta(){
 			const t = val('type'); const id = val('artifactId');
 			if(!t || !id) return;
 			const res = await apiCall('GET', `/artifacts/${t}/${id}`);
 			show(document.getElementById('metaResult'), document.getElementById('metaTs'), res);
+		}
+		async function openDownload(){
+			const id = val('artifactId');
+			if(!id) return;
+			const url = `${API_BASE}/artifact/${encodeURIComponent(id)}/download`;
+			window.open(url, '_blank');
+			const res = { status: 0, pretty: `Opened download URL:\n${url}`, requestTs: null, responseTs: null, offset: null, ms: null };
+			show(document.getElementById('downloadResult'), document.getElementById('downloadTs'), res);
+		}
+		async function deleteArtifact(){
+			const t = val('type'); const id = val('artifactId');
+			if(!t || !id) return;
+			const res = await apiCall('DELETE', `/artifacts/${t}/${id}`);
+			show(document.getElementById('deleteResult'), document.getElementById('deleteTs'), res);
 		}
 		async function loadRating(){
 			const id = val('artifactId'); if(!id) return;

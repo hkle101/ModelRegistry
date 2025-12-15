@@ -1,3 +1,8 @@
+"""High-level storage manager.
+
+Coordinates S3 (bytes) and DynamoDB (metadata) operations for artifacts.
+"""
+
 import logging
 import requests
 import re

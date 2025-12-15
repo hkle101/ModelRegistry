@@ -1,3 +1,8 @@
+"""Retrieve API router.
+
+Fetches a single artifact's stored metadata by type + id.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException
 import logging
 from backend.deps import storage_manager, verify_token

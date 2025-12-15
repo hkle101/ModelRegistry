@@ -1,3 +1,9 @@
+"""Metric scoring orchestration.
+
+Runs all implemented metric classes, collects scores/latencies, and produces
+a combined response payload.
+"""
+
 import json
 from typing import Dict, Any
 import logging

@@ -1,3 +1,5 @@
+"""Ramp-up time scoring metric implementation."""
+
 from typing import Any, Dict
 from .basemetric import BaseMetric
 

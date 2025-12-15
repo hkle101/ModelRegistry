@@ -1,3 +1,8 @@
+"""Regex search API router.
+
+Searches artifacts by regex across stored names and README text.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, Body
 from pydantic import BaseModel
 import logging
@@ -12,6 +17,7 @@ logger = logging.getLogger(__name__)
 # Request Model
 # ------------------------------
 class ArtifactRegExRequest(BaseModel):
+    """Request payload for regex-based search."""
     regex: str
 
 

@@ -1,3 +1,9 @@
+"""Data fetcher for the Code Quality metric.
+
+Collects simple repository signals (tests, CI, lint config, languages, etc.)
+from GitHub and exposes a normalized dict for the scoring logic.
+"""
+
 import os
 from typing import Any, Dict, List, Optional
 

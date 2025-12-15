@@ -1,3 +1,8 @@
+"""DynamoDB service wrapper.
+
+Provides CRUD + scan utilities for artifact metadata stored in DynamoDB.
+"""
+
 import logging
 from typing import Optional, List, Dict, Any
 from botocore.exceptions import ClientError

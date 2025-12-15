@@ -1,3 +1,9 @@
+"""Shared backend dependencies.
+
+Holds singleton instances (managers) used across routers and a baseline
+`verify_token` dependency.
+"""
+
 import logging
 from fastapi import Header
 from cli.utils.ArtifactManager import ArtifactManager

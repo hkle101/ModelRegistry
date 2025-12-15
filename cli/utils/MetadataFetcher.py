@@ -1,18 +1,25 @@
+"""Metadata fetching helpers.
+
+Fetches and normalizes metadata for Hugging Face (models/datasets) and GitHub
+repositories, including a suitable download URL when available.
+"""
+
 import requests
 from urllib.parse import urlparse
 import logging
 import os
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 class MetadataFetcher:
     """
     Retrieves metadata from Hugging Face or GitHub.
-    Returns a flat dictionary that includes:
+    Returns a dictionary including:
       - 'artifact_type'
       - 'download_url'
-      - metadata fields
+      - other metadata fields
     """
 
     def __init__(self, github_token: str = None):
@@ -22,7 +29,6 @@ class MetadataFetcher:
     def fetch(self, url: str) -> dict:
         """
         Determine artifact type, fetch metadata, and add download URL.
-        Returns a dictionary with 'artifact_type' and 'download_url'.
         """
         try:
             data: dict = {}
@@ -39,13 +45,12 @@ class MetadataFetcher:
                 data = self._fetch_github_metadata(url)
                 if "error" not in data:
                     data["artifact_type"] = "code"
-
             else:
                 logger.warning("Unsupported URL format: %s", url)
                 data = {"artifact_type": "unknown", "error": "Unsupported URL format"}
 
             # Add download URL
-            data["download_url"] = self.get_download_url(url)
+            data["download_url"] = self.get_download_url(url, data)
 
             return data
 
@@ -53,40 +58,45 @@ class MetadataFetcher:
             logger.exception("Failed to fetch metadata for URL: %s", url)
             return {"artifact_type": "unknown", "error": str(e), "download_url": None}
 
-    def get_download_url(self, url: str) -> str | None:
+    def get_download_url(self, url: str, metadata: dict | None) -> str | None:
         """
-        Returns a direct download URL for the artifact, if possible.
-        Supports GitHub repos, Hugging Face models, and datasets.
+        Return a direct download URL if possible.
         """
-        try:
-            if "github.com" in url:
-                path = urlparse(url).path.strip("/")
-                parts = path.split("/")
-                if len(parts) >= 2:
-                    owner, repo = parts[:2]
-                    return f"https://github.com/{owner}/{repo}/archive/refs/heads/main.zip"
-                return None
-
-            elif "huggingface.co" in url:
-                path = urlparse(url).path.strip("/")
-                if "/datasets/" in path:
-                    dataset_id = path.split("/datasets/")[-1]
-                    return f"https://huggingface.co/datasets/{dataset_id}/resolve/main/{dataset_id}.zip"
-                else:
-                    model_id = path
-                    return f"https://huggingface.co/{model_id}/resolve/main/{model_id}.zip"
-
-            else:
-                logger.warning("Unsupported URL for download: %s", url)
-                return None
-
-        except Exception as e:
-            logger.exception("Failed to generate download URL for %s: %s", url, e)
+        if not metadata:
             return None
+
+        # ---------- GitHub ----------
+        if "github.com" in url:
+            path = urlparse(url).path.strip("/")
+            owner, repo = path.split("/")[:2]
+            return f"https://github.com/{owner}/{repo}/archive/refs/heads/main.zip"
+
+        # ---------- Hugging Face ----------
+        if "huggingface.co" in url:
+            # Dataset download
+            if "/datasets/" in url:
+                dataset_id = urlparse(url).path.split("/datasets/")[-1].strip("/")
+                return f"https://huggingface.co/datasets/{dataset_id}/resolve/main/{dataset_id}.zip"
+
+            # Model download
+            repo_id = metadata.get("modelId") or metadata.get("id")
+            siblings = metadata.get("siblings", [])
+
+            preferred_files = [
+                "model.safetensors",
+                "pytorch_model.bin",
+                "tf_model.h5",
+                "flax_model.msgpack",
+            ]
+
+            for file in preferred_files:
+                if any(s.get("rfilename") == file for s in siblings):
+                    return f"https://huggingface.co/{repo_id}/resolve/main/{file}"
+
+        return None
 
     # ----- Internal fetch helpers -----
     def _fetch_metadata(self, api_url: str) -> dict:
-        """Generic safe fetch with logging."""
         try:
             response = requests.get(api_url, headers=self.headers, timeout=10)
             response.raise_for_status()
@@ -107,7 +117,7 @@ class MetadataFetcher:
 
     def _fetch_hf_dataset_metadata(self, url: str) -> dict:
         try:
-            dataset_id = urlparse(url).path.split("/datasets/")[-1]
+            dataset_id = urlparse(url).path.split("/datasets/")[-1].strip("/")
             api_url = f"https://huggingface.co/api/datasets/{dataset_id}"
             return self._fetch_metadata(api_url)
         except Exception as e:
@@ -126,18 +136,13 @@ class MetadataFetcher:
         except Exception as e:
             logger.exception("Failed to fetch GitHub metadata: %s", url)
             return {"artifact_type": "unknown", "error": str(e)}
-        
+
+
 if __name__ == "__main__":
-    # Example URLs to test:
-    # HF model: https://huggingface.co/gpt2
-    # HF dataset: https://huggingface.co/datasets/imagenet-1k
-    # GitHub repo: https://github.com/psf/requests
-
     url = input("Enter a model/dataset/repo URL: ").strip()
-
     fetcher = MetadataFetcher()
     result = fetcher.fetch(url)
 
     print("\n=== MetadataFetcher Result ===")
     print("artifact_type:", result.get("artifact_type"))
-    print("raw_metadata:", result)
+    print("download_url:", result.get("download_url"))

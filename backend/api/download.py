@@ -1,3 +1,8 @@
+"""Download API router.
+
+Exposes a stable endpoint that redirects to a short-lived presigned S3 URL.
+"""
+
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import RedirectResponse
 import logging

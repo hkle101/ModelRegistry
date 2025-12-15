@@ -1,3 +1,9 @@
+"""FastAPI application entrypoint.
+
+This module wires together middleware (logging, timestamps, CORS) and registers
+all API routers implemented under `backend/api/`.
+"""
+
 import logging
 from datetime import datetime
 import json
@@ -104,6 +110,7 @@ app.add_middleware(
 # ============================================================
 @app.middleware("http")
 async def timestamp_middleware(request: Request, call_next):
+    """Attach request/response timestamps to headers and JSON dict bodies."""
     request_ts = datetime.utcnow().isoformat() + "Z"
     response = await call_next(request)
     response_ts = datetime.utcnow().isoformat() + "Z"
@@ -134,6 +141,7 @@ async def timestamp_middleware(request: Request, call_next):
 # Router registration
 # ============================================================
 app.include_router(health_router)
+app.include_router(byregex_router)
 app.include_router(create_router)
 app.include_router(list_router)
 app.include_router(retrieve_router)
@@ -143,7 +151,6 @@ app.include_router(lineage_router)
 app.include_router(rate_router)
 app.include_router(update_router)
 app.include_router(cost_router)
-app.include_router(byregex_router)
 app.include_router(delete_router)
 app.include_router(download_router)
 

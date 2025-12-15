@@ -1,3 +1,9 @@
+"""Update API router.
+
+Defines the update endpoint for an artifact. Current implementation is a
+lightweight placeholder response.
+"""
+
 from fastapi import APIRouter, Depends, HTTPException, Body
 import logging
 from backend.deps import verify_token
@@ -13,6 +19,10 @@ def artifact_update(
     artifact_data: dict = Body(...),
     _: bool = Depends(verify_token),
 ):
+    """Update artifact fields.
+
+    Note: This endpoint currently returns a simple acknowledgement payload.
+    """
     try:
         if not id or not artifact_type:
             raise HTTPException(status_code=400, detail="Missing or invalid artifact_type or artifact_id")

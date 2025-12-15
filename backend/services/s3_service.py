@@ -1,3 +1,8 @@
+"""S3 service wrapper.
+
+Handles low-level S3 operations (upload/download/delete/presign/reset).
+"""
+
 import logging
 from io import BytesIO
 from aws.config import s3, BUCKET_NAME

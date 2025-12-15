@@ -1,3 +1,5 @@
+"""Data fetcher for ramp-up time scoring evidence."""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 
