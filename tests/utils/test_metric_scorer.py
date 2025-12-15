@@ -42,7 +42,8 @@ def test_score_artifact_json_structure(monkeypatch):
 
     assert raw["size_score"]["desktop_pc"] == 0.9
     assert raw["code_quality"] == 0.8
-    assert raw["net_score"] == pytest.approx(0.82, rel=1e-2)
+    # With average size_score across devices, net_score tracks the shared 0.8
+    assert raw["net_score"] == pytest.approx(0.80, rel=1e-2)
 
 
 def test_results_to_flat_rounding():

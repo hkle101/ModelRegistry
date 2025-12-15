@@ -4,7 +4,8 @@ from cli.utils.ArtifactManager import ArtifactManager
 def test_extract_name_from_url():
     mgr = ArtifactManager()
     assert mgr._extract_name_from_url("https://github.com/user/repo.git") == "repo"
-    assert mgr._extract_name_from_url("https://example.com/") == "unknown_artifact"
+    # For URLs without a path, fall back to host-derived name
+    assert mgr._extract_name_from_url("https://example.com/") == "example.com"
 
 
 def test_process_url_happy_path(monkeypatch):
