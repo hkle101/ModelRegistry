@@ -154,7 +154,7 @@ class BusFactorDataFetcher(BaseDataFetcher):
         idx = text.find(marker)
         if idx == -1:
             return None
-        frag = text[idx + len(marker) : idx + len(marker) + 200]
+        frag = text[idx + len(marker): idx + len(marker) + 200]
         for delim in [" ", "\n", "\r", "\t", ")", "]", "<", ">", '"', "'", "#"]:
             frag = frag.split(delim)[0]
         parts = frag.strip().split("/")

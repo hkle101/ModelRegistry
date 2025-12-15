@@ -24,7 +24,10 @@ def artifact_create(
     try:
         # Process the artifact URL to get metadata
         artifact_data = artifact_manager.processUrl(request.url)
-        artifact_id = artifact_data.get("artifact_id")
+        artifact_id_val = artifact_data.get("artifact_id")
+        if not isinstance(artifact_id_val, str):
+            raise HTTPException(status_code=500, detail="Invalid artifact_id returned from artifact manager")
+        artifact_id = artifact_id_val
         # ✅ CLEAN DOWNLOAD URL (new format)
         base_url = str(http_request.base_url).rstrip("/")
         download_url = f"{base_url}/artifact/{artifact_id}/download"
@@ -39,7 +42,9 @@ def artifact_create(
 
         # Store artifact in S3 + DynamoDB
         ok = storage_manager.store_artifact(
-            artifact_data, artifact_bytes, artifact_data.get("name")
+            artifact_data,
+            artifact_bytes,
+            artifact_data.get("name"),
         )
         if not ok:
             raise HTTPException(status_code=500, detail="Failed to store artifact")
@@ -51,9 +56,7 @@ def artifact_create(
         )
 
         # Fetch stored metadata
-        stored_metadata = storage_manager.get_artifact(
-            artifact_data.get("artifact_id")
-        )
+        stored_metadata = storage_manager.get_artifact(artifact_id)
         if not stored_metadata:
             raise HTTPException(
                 status_code=500, detail="Artifact stored but metadata missing"

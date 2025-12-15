@@ -29,7 +29,7 @@ class BaseMetric(ABC):
         """
         pass
 
-    def getScores(self, data: Dict[str, Any]) -> Dict[str, any]:
+    def getScores(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculates the metric and measures its latency.
         Returns both the score and latency.

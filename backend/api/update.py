@@ -19,6 +19,6 @@ def artifact_update(
         return {"status": "updated", "artifact_id": id}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Artifact update failed")
         raise HTTPException(status_code=500, detail="Internal error")

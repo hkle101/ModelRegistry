@@ -6,6 +6,7 @@ from backend.deps import storage_manager, verify_token
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
 @router.get("/artifact/model/{id}/rate")
 def artifact_model_rate(id: str, _: bool = Depends(verify_token)):
     """
@@ -37,7 +38,7 @@ def artifact_model_rate(id: str, _: bool = Depends(verify_token)):
 
             # If stored as JSON string, parse it
             if isinstance(scores, str):
-                logger.info(f"[RATE] Stored scores are JSON string — attempting parse")
+                logger.info("[RATE] Stored scores are JSON string — attempting parse")
                 try:
                     scores = json.loads(scores)
                 except Exception:

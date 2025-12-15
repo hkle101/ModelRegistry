@@ -9,6 +9,7 @@ import requests
 from urllib.parse import urlparse
 import logging
 import os
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class MetadataFetcher:
       - metadata fields
     """
 
-    def __init__(self, github_token: str = None):
+    def __init__(self, github_token: Optional[str] = None):
         self.github_token = github_token or os.getenv("GITHUB_TOKEN")
         self.headers = {"Authorization": f"token {self.github_token}"} if self.github_token else {}
 
@@ -133,7 +134,8 @@ class MetadataFetcher:
         except Exception as e:
             logger.exception("Failed to fetch GitHub metadata: %s", url)
             return {"artifact_type": "unknown", "error": str(e)}
-        
+
+
 if __name__ == "__main__":
     # Example URLs to test:
     # HF model: https://huggingface.co/gpt2

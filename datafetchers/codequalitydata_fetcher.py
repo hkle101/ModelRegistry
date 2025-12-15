@@ -237,7 +237,7 @@ class CodeQualityDataFetcher(BaseDataFetcher):
         idx = text.find(marker)
         if idx == -1:
             return None
-        frag = text[idx + len(marker) : idx + len(marker) + 200]
+        frag = text[idx + len(marker): idx + len(marker) + 200]
         # Split on delimiters that commonly follow repo paths
         for delim in [" ", "\n", "\r", "\t", ")", "]", "<", ">", '"', "'", "#"]:
             frag = frag.split(delim)[0]
