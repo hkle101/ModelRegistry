@@ -1,3 +1,9 @@
+"""Code quality metric implementation.
+
+This module defines CodeQualityMetric, which scores the presence of
+tests, CI, linting, packaging, language diversity, and repository size.
+"""
+
 from typing import Any, Dict
 
 # BaseMetric via relative import works in both contexts
@@ -5,9 +11,9 @@ from .basemetric import BaseMetric
 
 # DataFetcher: support both package and top-level execution
 try:
-  from ModelRegistry.datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
+    from ModelRegistry.datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
 except ModuleNotFoundError:
-  from datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
+    from datafetchers.codequalitydata_fetcher import CodeQualityDataFetcher
 
 
 class CodeQualityMetric(BaseMetric):

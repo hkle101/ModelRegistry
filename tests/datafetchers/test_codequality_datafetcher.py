@@ -18,8 +18,9 @@ def test_fetch_codedata_aggregates_repo_tree(monkeypatch):
     assert result["has_ci"] is True
     assert result["has_packaging"] is True
     assert result["has_readme"] is True
-    assert result["total_code_files"] == 2
-    assert result["language_counts"]["Python"] == 1
+    # All code-like files (including tests and packaging) are counted
+    assert result["total_code_files"] == 4
+    assert result["language_counts"]["Python"] == 3
     assert result["language_counts"]["JavaScript"] == 1
 
 
@@ -33,5 +34,6 @@ def test_fetch_modeldata_falls_back_to_linked_repo(monkeypatch):
 
     result = fetcher.fetch_Modeldata({"id": "m", "siblings": []})
     assert result["has_tests"] is True
-    assert result["language_counts"].get("Python") == 1
-    assert result["total_code_files"] == 1
+    # Fallback repo tree contributes both source and test Python files
+    assert result["language_counts"].get("Python") == 2
+    assert result["total_code_files"] == 2

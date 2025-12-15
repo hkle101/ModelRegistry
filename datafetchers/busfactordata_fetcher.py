@@ -1,3 +1,10 @@
+"""Data fetcher for bus factor evidence.
+
+This module implements BusFactorDataFetcher, which pulls commit
+author information from GitHub or linked repositories to support
+the BusFactorMetric.
+"""
+
 import os
 from typing import Any, Dict, List, Optional, Set
 import requests
@@ -147,7 +154,7 @@ class BusFactorDataFetcher(BaseDataFetcher):
         idx = text.find(marker)
         if idx == -1:
             return None
-        frag = text[idx + len(marker) : idx + len(marker) + 200]
+        frag = text[idx + len(marker): idx + len(marker) + 200]
         for delim in [" ", "\n", "\r", "\t", ")", "]", "<", ">", '"', "'", "#"]:
             frag = frag.split(delim)[0]
         parts = frag.strip().split("/")

@@ -19,6 +19,6 @@ def reset_registry(user_has_permission: bool = Depends(verify_token)):
             raise HTTPException(status_code=500, detail="Reset failed")
         logger.info("Registry successfully reset")
         return {"message": "Registry reset"}
-    except Exception as e:
+    except Exception:
         logger.exception("Exception during reset")
         raise HTTPException(status_code=500, detail="Internal error")

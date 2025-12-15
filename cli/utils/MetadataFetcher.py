@@ -1,7 +1,15 @@
+"""Metadata fetching helpers for Hugging Face and GitHub artifacts.
+
+This module defines MetadataFetcher, which discovers artifact type,
+pulls raw metadata via the appropriate API, and computes a convenient
+download URL.
+"""
+
 import requests
 from urllib.parse import urlparse
 import logging
 import os
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +23,7 @@ class MetadataFetcher:
       - metadata fields
     """
 
-    def __init__(self, github_token: str = None):
+    def __init__(self, github_token: Optional[str] = None):
         self.github_token = github_token or os.getenv("GITHUB_TOKEN")
         self.headers = {"Authorization": f"token {self.github_token}"} if self.github_token else {}
 
@@ -54,13 +62,17 @@ class MetadataFetcher:
             return {"artifact_type": "unknown", "error": str(e), "download_url": None}
 
     def get_download_url(self, url: str) -> str | None:
-        """
-        Returns a direct download URL for the artifact, if possible.
-        Supports GitHub repos, Hugging Face models, and datasets.
+        """Return a direct download URL for GitHub or Hugging Face artifacts.
+
+        This includes a bug fix for Hugging Face datasets where the
+        path previously duplicated the ``datasets`` segment.
         """
         try:
+            parsed = urlparse(url)
+            raw_path = parsed.path
+
             if "github.com" in url:
-                path = urlparse(url).path.strip("/")
+                path = raw_path.strip("/")
                 parts = path.split("/")
                 if len(parts) >= 2:
                     owner, repo = parts[:2]
@@ -68,12 +80,11 @@ class MetadataFetcher:
                 return None
 
             elif "huggingface.co" in url:
-                path = urlparse(url).path.strip("/")
-                if "/datasets/" in path:
-                    dataset_id = path.split("/datasets/")[-1]
+                if "/datasets/" in raw_path:
+                    dataset_id = raw_path.split("/datasets/")[-1].strip("/")
                     return f"https://huggingface.co/datasets/{dataset_id}/resolve/main/{dataset_id}.zip"
                 else:
-                    model_id = path
+                    model_id = raw_path.strip("/")
                     return f"https://huggingface.co/{model_id}/resolve/main/{model_id}.zip"
 
             else:
@@ -126,7 +137,8 @@ class MetadataFetcher:
         except Exception as e:
             logger.exception("Failed to fetch GitHub metadata: %s", url)
             return {"artifact_type": "unknown", "error": str(e)}
-        
+
+
 if __name__ == "__main__":
     # Example URLs to test:
     # HF model: https://huggingface.co/gpt2

@@ -1,3 +1,10 @@
+"""Coordinator for running all metric data fetchers.
+
+This module exposes MetricDataFetcher, which calls each individual
+datafetcher to build the unified artifact_data dict consumed by
+MetricScorer and the metrics.
+"""
+
 from typing import Any, Dict
 import logging
 try:

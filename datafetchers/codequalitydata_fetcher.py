@@ -1,3 +1,10 @@
+"""Data fetcher for code-quality related signals.
+
+This module defines CodeQualityDataFetcher, which inspects repository
+trees, languages, config files, and docs to supply inputs to the
+CodeQualityMetric.
+"""
+
 import os
 from typing import Any, Dict, List, Optional
 
@@ -230,7 +237,7 @@ class CodeQualityDataFetcher(BaseDataFetcher):
         idx = text.find(marker)
         if idx == -1:
             return None
-        frag = text[idx + len(marker) : idx + len(marker) + 200]
+        frag = text[idx + len(marker): idx + len(marker) + 200]
         # Split on delimiters that commonly follow repo paths
         for delim in [" ", "\n", "\r", "\t", ")", "]", "<", ">", '"', "'", "#"]:
             frag = frag.split(delim)[0]

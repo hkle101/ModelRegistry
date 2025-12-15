@@ -1,0 +1,10 @@
+[flake8]
+exclude = .git,__pycache__,.venv,.mypy_cache,.pytest_cache
+max-line-length = 140
+
+# Allow unused imports in tests (common for fixtures and parametrization)
+per-file-ignores =
+    tests/*: F401
+
+# Ignore whitespace/newline nitpicks to avoid touching legacy files
+extend-ignore = W292,W293,W391

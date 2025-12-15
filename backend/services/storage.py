@@ -23,7 +23,12 @@ class StorageManager:
     # ------------------------
     # Artifact Operations
     # ------------------------
-    def create_metadata(self, artifact_data: Dict[str, Any], artifact_bytes: bytes, filename: str) -> Dict[str, Any]:
+    def create_metadata(
+        self,
+        artifact_data: Dict[str, Any],
+        artifact_bytes: bytes,
+        filename: str | None,
+    ) -> Dict[str, Any]:
         """
         Uploads artifact bytes to S3, generates metadata dictionary, and returns it.
         """
@@ -31,8 +36,9 @@ class StorageManager:
             artifact_id = artifact_data.get("artifact_id")
             if not artifact_id:
                 raise ValueError("artifact_data must contain 'artifact_id'")
-            filename = artifact_data.get('name') if not filename else filename
-            s3_uri = self.s3.upload_artifact(artifact_bytes, artifact_id, filename)
+            raw_name = artifact_data.get("name")
+            resolved_filename = filename or (str(raw_name) if raw_name is not None else "artifact")
+            s3_uri = self.s3.upload_artifact(artifact_bytes, artifact_id, resolved_filename)
             now = datetime.utcnow().isoformat() + "Z"
 
             metadata = {
@@ -71,7 +77,12 @@ class StorageManager:
             logger.exception(f"Failed to generate presigned URL for {key}: {e}")
             raise
 
-    def store_artifact(self, artifact_data: Dict[str, Any], artifact_bytes: bytes, filename: str) -> bool:
+    def store_artifact(
+        self,
+        artifact_data: Dict[str, Any],
+        artifact_bytes: bytes,
+        filename: str | None,
+    ) -> bool:
         """
         Stores the artifact bytes and metadata in S3 and DynamoDB.
         """

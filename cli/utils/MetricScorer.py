@@ -1,3 +1,10 @@
+"""Orchestration for running all metrics and computing a net score.
+
+This module defines MetricScorer, which instantiates each metric,
+executes them (in parallel), and aggregates their scores and
+latencies into a single result structure.
+"""
+
 import json
 from typing import Dict, Any
 import logging
@@ -239,24 +246,41 @@ class MetricScorer:
         for metric_name in self.metrics.keys():
             if metric_name == "size_score":
                 out["raspberry_pi"] = float(
-                    results.get("raspberry_pi", Decimal("0.00"))
+                    self._to_decimal(results.get("raspberry_pi", Decimal("0.00")))
                 )
-                out["jetson_nano"] = float(results.get("jetson_nano", Decimal("0.00")))
-                out["desktop_pc"] = float(results.get("desktop_pc", Decimal("0.00")))
-                out["aws_server"] = float(results.get("aws_server", Decimal("0.00")))
+                out["jetson_nano"] = float(
+                    self._to_decimal(results.get("jetson_nano", Decimal("0.00")))
+                )
+                out["desktop_pc"] = float(
+                    self._to_decimal(results.get("desktop_pc", Decimal("0.00")))
+                )
+                out["aws_server"] = float(
+                    self._to_decimal(results.get("aws_server", Decimal("0.00")))
+                )
                 out["size_score_latency"] = float(
-                    results.get(
-                        "size_score_latency", results.get("latency", Decimal("0.00"))
+                    self._to_decimal(
+                        results.get(
+                            "size_score_latency",
+                            results.get("latency", Decimal("0.00")),
+                        )
                     )
                 )
             else:
-                out[metric_name] = float(results.get(metric_name, Decimal("0.00")))
+                out[metric_name] = float(
+                    self._to_decimal(results.get(metric_name, Decimal("0.00")))
+                )
                 out[f"{metric_name}_latency"] = float(
-                    results.get(f"{metric_name}_latency", Decimal("0.00"))
+                    self._to_decimal(
+                        results.get(f"{metric_name}_latency", Decimal("0.00"))
+                    )
                 )
 
-        out["net_score"] = float(results.get("net_score", Decimal("0.00")))
-        out["net_latency"] = float(results.get("net_latency", Decimal("0.00")))
+        out["net_score"] = float(
+            self._to_decimal(results.get("net_score", Decimal("0.00")))
+        )
+        out["net_latency"] = float(
+            self._to_decimal(results.get("net_latency", Decimal("0.00")))
+        )
 
         out.update(
             {

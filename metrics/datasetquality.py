@@ -1,3 +1,10 @@
+"""Dataset quality metric implementation.
+
+This module defines DatasetQualityMetric, which scores how well a
+dataset is documented and supported with examples, using either a
+heuristic or optional GenAI-based evaluation.
+"""
+
 import os
 import time
 import requests

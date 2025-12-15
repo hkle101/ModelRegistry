@@ -35,5 +35,6 @@ def test_fetch_github_error(monkeypatch):
     # Force _fetch_metadata to return error
     monkeypatch.setattr(fetcher, "_fetch_metadata", lambda api_url: {"error": "boom"})
     res = fetcher.fetch("https://github.com/owner/repo")
-    assert res["artifact_type"] == "code"
+    # On GitHub metadata error, we should not confidently classify as code
+    assert res.get("artifact_type") != "code"
     assert res.get("error") == "boom"

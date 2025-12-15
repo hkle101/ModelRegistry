@@ -1,3 +1,10 @@
+"""High-level artifact management helpers for the CLI.
+
+This module provides ArtifactManager, which orchestrates metadata
+fetching, metric data preparation, and scoring for a single artifact
+URL.
+"""
+
 from typing import Dict, Any
 import re
 import logging

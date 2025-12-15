@@ -1,3 +1,9 @@
+"""Model size compatibility metric implementation.
+
+This module defines SizeScoreMetric, which converts model size into
+hardware-specific compatibility scores for several reference devices.
+"""
+
 from typing import Any, Dict
 from .basemetric import BaseMetric
 import time
@@ -59,7 +65,7 @@ class SizeScoreMetric(BaseMetric):
         self.desktop_pc_score = _device_score(self.device_limits_mb["desktop_pc"])
         self.aws_server_score = _device_score(self.device_limits_mb["aws_server"])
 
-    def getScores(self, data: Dict[str, Any]) -> Dict[str, any]:
+    def getScores(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Calculate metric, measure latency, and return them
         """

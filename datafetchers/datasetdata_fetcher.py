@@ -1,3 +1,10 @@
+"""Data fetcher focused on dataset metadata.
+
+This module exposes DatasetDataFetcher, which normalizes Hugging Face
+dataset card information into the compact structure expected by
+DatasetQualityMetric.
+"""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 

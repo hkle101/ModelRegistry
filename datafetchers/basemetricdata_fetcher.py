@@ -1,3 +1,10 @@
+"""Base data fetcher abstractions for metric inputs.
+
+This module defines BaseDataFetcher, an abstract helper for turning
+raw metadata (from Hugging Face or GitHub) into normalized dicts
+that individual metrics can consume.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 from cli.utils.MetadataFetcher import MetadataFetcher

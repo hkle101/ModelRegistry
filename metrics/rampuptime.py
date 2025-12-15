@@ -1,3 +1,11 @@
+"""Ramp-up time metric implementation.
+
+This module exposes RampUpTimeMetric, which uses documentation,
+quick-start guides, installation instructions, examples, and
+dependency complexity to estimate how quickly a user can get
+productive with an artifact.
+"""
+
 from typing import Any, Dict
 from .basemetric import BaseMetric
 

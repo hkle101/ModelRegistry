@@ -10,9 +10,12 @@ logger = logging.getLogger(__name__)
 # -----------------------------
 # Pydantic models
 # -----------------------------
+
+
 class ArtifactQuery(BaseModel):
     name: str
     types: Optional[List[str]] = None  # can be ["model", "code", "dataset"]
+
 
 class ArtifactMetadata(BaseModel):
     name: str
@@ -24,13 +27,15 @@ class ArtifactMetadata(BaseModel):
 # -----------------------------
 # Endpoint
 # -----------------------------
+
+
 @router.post(
     "/artifacts",
     response_model=List[ArtifactMetadata],
     summary="Get the artifacts from the registry. (BASELINE)",
     description=(
         "Get artifacts fitting the query. "
-        "If you want to enumerate all artifacts, provide a single query with name='*'." 
+        "If you want to enumerate all artifacts, provide a single query with name='*'."
     ),
 )
 def list_artifacts(
@@ -47,7 +52,7 @@ def list_artifacts(
 
         # Convert Pydantic objects to dicts (ensure 'types' key is a list)
         query_dicts = [
-            {**q.model_dump(exclude_none=True), "types": q.types or []} 
+            {**q.model_dump(exclude_none=True), "types": q.types or []}
             for q in queries
         ]
 

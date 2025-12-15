@@ -1,3 +1,10 @@
+"""Data fetcher for model size information.
+
+This module defines SizeDataFetcher, which extracts and converts
+model size fields from metadata into a normalized megabyte value
+used by SizeScoreMetric.
+"""
+
 from .basemetricdata_fetcher import BaseDataFetcher
 from typing import Any, Dict
 

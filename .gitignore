@@ -70,3 +70,13 @@ htmlcov/
 
 # Extras
 *.egg
+ec2-keypair.pem
+autograder/ece461_fall_2025_openapi_spec.yaml
+docs/dfd_combined.md
+docs/dfd_combined.mmd
+docs/dfd_level0.md
+docs/dfd_level0.mmd
+docs/dfd_level1.md
+docs/dfd_level1.mmd
+docs/dfd_level2.md
+docs/dfd_level2.mmd
